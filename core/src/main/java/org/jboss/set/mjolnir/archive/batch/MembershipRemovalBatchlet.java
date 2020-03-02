@@ -5,6 +5,7 @@ import org.jboss.logging.Logger;
 import org.jboss.set.mjolnir.archive.ArchivingBean;
 import org.jboss.set.mjolnir.archive.GitHubDiscoveryBean;
 import org.jboss.set.mjolnir.archive.domain.GitHubOrganization;
+import org.jboss.set.mjolnir.archive.domain.RemovalLog;
 import org.jboss.set.mjolnir.archive.domain.RemovalStatus;
 import org.jboss.set.mjolnir.archive.domain.RepositoryFork;
 import org.jboss.set.mjolnir.archive.domain.User;
@@ -15,7 +16,7 @@ import javax.inject.Inject;
 import javax.inject.Named;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
-import javax.persistence.Query;
+import javax.persistence.TypedQuery;
 import java.io.IOException;
 import java.sql.Timestamp;
 import java.util.List;
@@ -47,8 +48,9 @@ public class MembershipRemovalBatchlet extends AbstractBatchlet {
             try {
                 successful &= processRemoval(removal);
             } catch (Exception e) {
-                logger.errorf(e, "Removal processing of user %s failed.", removal.getUsername());
-                // TODO: log error to db
+                // log error to db
+                logError(removal, "Failed to process user: " + removal.getUsername(), e);
+
                 removal.setStatus(RemovalStatus.FAILED);
                 em.persist(removal);
                 flush();
@@ -68,8 +70,7 @@ public class MembershipRemovalBatchlet extends AbstractBatchlet {
         // perform in transaction to avoid removals being loaded by two parallel executions
         em.getTransaction().begin();
 
-        Query findRemovalsQuery = em.createNamedQuery(UserRemoval.FIND_REMOVALS_TO_PROCESS);
-        //noinspection unchecked
+        TypedQuery<UserRemoval> findRemovalsQuery = em.createNamedQuery(UserRemoval.FIND_REMOVALS_TO_PROCESS, UserRemoval.class);
         List<UserRemoval> removals = findRemovalsQuery.getResultList();
 
         Timestamp timestamp = new Timestamp(System.currentTimeMillis());
@@ -113,7 +114,7 @@ public class MembershipRemovalBatchlet extends AbstractBatchlet {
 
         String gitHubUsername = findGitHubUsername(removal.getUsername());
         if (gitHubUsername == null) {
-            logger.infof("GitHub username not known for user %s", removal.getUsername());
+            logMessage(removal, "Ignoring removal request for user " + removal.getUsername());
 
             removal.setStatus(RemovalStatus.UNKNOWN_USER);
             em.persist(removal);
@@ -138,9 +139,9 @@ public class MembershipRemovalBatchlet extends AbstractBatchlet {
                 logger.infof("Found following repositories to archive: %s",
                         repositoriesToArchive.stream().map(Repository::generateId).collect(Collectors.toList()));
             } catch (IOException e) {
-                logger.errorf(e, "Couldn't obtain repositories for user %s", gitHubUsername);
+                logError(removal, "Couldn't obtain repositories for user " + gitHubUsername, e);
+
                 removal.setStatus(RemovalStatus.FAILED);
-                // TODO: log error to db
                 em.persist(removal);
 
                 return false;
@@ -163,9 +164,9 @@ public class MembershipRemovalBatchlet extends AbstractBatchlet {
                 try {
                     archivingBean.createRepositoryMirror(repository.getCloneUrl());
                 } catch (Exception e) { // TODO: change this to a checked exception(s) when archivingBean is ready?
-                    logger.errorf(e, "Couldn't archive repository %s", repository.getCloneUrl());
+                    logError(removal, "Couldn't archive repository: " + repository.getCloneUrl(), e);
+
                     removal.setStatus(RemovalStatus.FAILED);
-                    // TODO: log error to db
                     em.persist(removal);
 
                     return false;
@@ -185,6 +186,27 @@ public class MembershipRemovalBatchlet extends AbstractBatchlet {
     private void flush() {
         em.getTransaction().begin();
         em.getTransaction().commit();
+    }
+
+    private void logMessage(UserRemoval removal, String message) {
+        logger.infof(message);
+
+        RemovalLog log = new RemovalLog();
+        log.setUserRemoval(removal);
+        log.setMessage(message);
+        em.persist(log);
+    }
+
+    private void logError(UserRemoval removal, String message, Throwable t) {
+        logger.errorf(t, message, removal.getUsername());
+
+        RemovalLog log = new RemovalLog();
+        log.setUserRemoval(removal);
+        log.setMessage(message);
+        if (t != null) {
+            log.setStackTrace(t);
+        }
+        em.persist(log);
     }
 
     static RepositoryFork createRepositoryFork(Repository repository) {

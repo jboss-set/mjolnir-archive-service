@@ -92,7 +92,7 @@ public class MembershipRemovalBatchletTest {
         List<UserRemoval> removalsToProcess = findRemovalsQuery.getResultList();
         assertThat(removalsToProcess.size()).isEqualTo(0);
 
-        // verify the removal state
+        // verify processed removal state
         List<UserRemoval> removals = em.createQuery("SELECT r FROM UserRemoval r where r.username = :username", UserRemoval.class)
                 .setParameter("username", "thofman")
                 .getResultList();
@@ -110,6 +110,19 @@ public class MembershipRemovalBatchletTest {
                             Tuple.tuple("testorg/aphrodite", "TomasHofman/aphrodite"),
                             Tuple.tuple("testorg/activemq-artemis", "TomasHofman/activemq-artemis")
                     );
+        });
+
+        // verify unprocessed removal state
+        removals = em.createQuery("SELECT r FROM UserRemoval r where r.username = :username", UserRemoval.class)
+                .setParameter("username", "lvydra")
+                .getResultList();
+        assertThat(removals.size()).isEqualTo(1);
+        assertThat(removals.get(0)).satisfies(removal -> {
+            em.refresh(removal);
+            assertThat(removal.getStatus()).isEqualTo(RemovalStatus.UNKNOWN_USER);
+            assertThat(removal.getLogs())
+                    .extracting("message")
+                    .contains("Ignoring removal request for user lvydra");
         });
 
         // TODO: verify that repositories were archived

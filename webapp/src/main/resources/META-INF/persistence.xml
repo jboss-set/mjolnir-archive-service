@@ -6,6 +6,7 @@
     <persistence-unit name="mjolnir-archive-service">
         <class>org.jboss.set.mjolnir.archive.domain.RepositoryFork</class>
         <class>org.jboss.set.mjolnir.archive.domain.UserRemoval</class>
+        <class>org.jboss.set.mjolnir.archive.domain.RemovalLog</class>
         <class>org.jboss.set.mjolnir.archive.domain.User</class>
         <class>org.jboss.set.mjolnir.archive.domain.GitHubOrganization</class>
         <class>org.jboss.set.mjolnir.archive.domain.GitHubTeam</class>

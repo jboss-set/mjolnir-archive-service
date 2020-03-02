@@ -58,3 +58,12 @@ create table application_parameters (
     param_name varchar(255) primary key,
     param_value varchar(255)
 );
+
+create sequence sq_removal_logs;
+
+create table removal_logs (
+    id bigint default nextval('sq_removal_logs') primary key,
+    user_removal_id bigint not null,
+    message varchar(255),
+    stack_trace text
+);

@@ -70,6 +70,9 @@ public class UserRemoval {
     @JoinColumn(name = "user_removal_id")
     private List<RepositoryFork> forks;
 
+    @OneToMany
+    @JoinColumn(name = "user_removal_id")
+    private List<RemovalLog> logs;
 
     public Long getId() {
         return id;
@@ -124,13 +127,18 @@ public class UserRemoval {
     }
 
     public List<RepositoryFork> getForks() {
-        if (forks == null) {
-            forks = new ArrayList<>();
-        }
         return forks;
     }
 
     public void setForks(List<RepositoryFork> forks) {
         this.forks = forks;
+    }
+
+    public List<RemovalLog> getLogs() {
+        return logs;
+    }
+
+    public void setLogs(List<RemovalLog> logs) {
+        this.logs = logs;
     }
 }
