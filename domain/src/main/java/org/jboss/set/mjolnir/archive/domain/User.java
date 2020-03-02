@@ -5,15 +5,22 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.NamedQueries;
+import javax.persistence.NamedQuery;
 import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
 
 /**
  * @author Martin Stefanko (mstefank@redhat.com)
  */
+@NamedQueries({
+        @NamedQuery(name = User.FIND_BY_KRB_NAME, query = "SELECT u FROM User u WHERE u.kerberosName = :krbName")
+})
 @Entity
 @Table(name = "users")
 public class User {
+
+    public static final String FIND_BY_KRB_NAME = "Users.findByKrbName";
 
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "sq_users")

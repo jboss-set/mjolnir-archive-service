@@ -4,26 +4,18 @@ import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import org.eclipse.egit.github.core.Repository;
 import org.eclipse.egit.github.core.client.GitHubClient;
 import org.eclipse.egit.github.core.service.RepositoryService;
-import org.junit.Assert;
+import org.jboss.set.mjolnir.archive.util.TestUtils;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.URL;
 import java.util.List;
 import java.util.Set;
 
-import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
-import static com.github.tomakehurst.wiremock.client.WireMock.get;
-import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
-import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
-import static com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
-import static org.jboss.set.mjolnir.archive.TestUtils.readSampleResponse;
 import static org.junit.Assert.assertEquals;
 
 public class GitHubDiscoveryBeanTestCase {
@@ -35,23 +27,7 @@ public class GitHubDiscoveryBeanTestCase {
 
     @Before
     public void setup() throws IOException, URISyntaxException {
-        stubFor(get(urlPathEqualTo("/api/v3/orgs/testorg/repos"))
-                .willReturn(aResponse()
-                        .withStatus(200)
-                        .withHeader("Content-Type", "application/json")
-                        .withBody(readSampleResponse("responses/gh-orgs-repos-response.json"))));
-
-        stubFor(get(urlPathMatching("/api/v3/repos/testorg/aphrodite/forks"))
-                .willReturn(aResponse()
-                        .withStatus(200)
-                        .withHeader("Content-Type", "application/json")
-                        .withBody(readSampleResponse("responses/gh-repos-forks-aphrodite-response.json"))));
-
-        stubFor(get(urlPathMatching("/api/v3/repos/testorg/activemq-artemis/forks"))
-                .willReturn(aResponse()
-                        .withStatus(200)
-                        .withHeader("Content-Type", "application/json")
-                        .withBody(readSampleResponse("responses/gh-repos-forks-artemis-response.json"))));
+        TestUtils.setupGitHubApiStubs();
     }
 
     @Test

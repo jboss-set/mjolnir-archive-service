@@ -15,7 +15,7 @@ import javax.persistence.Table;
  */
 @Entity
 @Table(name = "github_teams")
-public class GithubTeam {
+public class GitHubTeam {
 
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "sq_github_teams")
@@ -24,25 +24,25 @@ public class GithubTeam {
 
     @ManyToOne
     @JoinColumn(name="org_id")
-    private GithubOrganization organization;
+    private GitHubOrganization organization;
 
     private String name;
 
     @Column(name = "github_id", unique = true)
     private Long githubId;
 
-    public GithubTeam() {
+    public GitHubTeam() {
     }
 
     public Long getId() {
         return id;
     }
 
-    public GithubOrganization getOrganization() {
+    public GitHubOrganization getOrganization() {
         return organization;
     }
 
-    public void setOrganization(GithubOrganization organization) {
+    public void setOrganization(GitHubOrganization organization) {
         this.organization = organization;
     }
 

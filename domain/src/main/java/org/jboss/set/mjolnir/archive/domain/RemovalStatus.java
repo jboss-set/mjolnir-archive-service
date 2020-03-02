@@ -13,14 +13,9 @@ public enum RemovalStatus {
     STARTED,
 
     /**
-     * User's repository forks has been discovered.
+     * User's GitHub username is not known.
      */
-    REPOSITORIES_DISCOVERED,
-
-    /**
-     * User's repository forks has been archived.
-     */
-    REPOSITORIES_ARCHIVED,
+    UNKNOWN_USER,
 
     /**
      * User's membership has been removed.

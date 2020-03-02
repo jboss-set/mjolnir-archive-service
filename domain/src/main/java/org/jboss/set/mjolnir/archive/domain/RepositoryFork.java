@@ -7,6 +7,8 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.ManyToOne;
 import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
 import java.sql.Timestamp;
@@ -34,6 +36,10 @@ public class RepositoryFork {
 
     @Column(name = "source_repository_url")
     private String sourceRepositoryUrl;
+
+    @ManyToOne
+    @JoinColumn(name = "user_removal_id")
+    private UserRemoval userRemoval;
 
     @CreationTimestamp
     private Timestamp created;
@@ -74,6 +80,14 @@ public class RepositoryFork {
 
     public void setSourceRepositoryUrl(String sourceRepositoryUrl) {
         this.sourceRepositoryUrl = sourceRepositoryUrl;
+    }
+
+    public UserRemoval getUserRemoval() {
+        return userRemoval;
+    }
+
+    public void setUserRemoval(UserRemoval userRemoval) {
+        this.userRemoval = userRemoval;
     }
 
     public Timestamp getCreated() {

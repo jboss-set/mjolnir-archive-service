@@ -3,6 +3,7 @@ package org.jboss.mjolnir.archive.service.webapp.servlet;
 import org.jboss.logging.Logger;
 
 import javax.batch.operations.JobOperator;
+import javax.batch.operations.NoSuchJobException;
 import javax.batch.runtime.BatchRuntime;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
@@ -25,15 +26,20 @@ public class StartBatchServlet extends HttpServlet {
         resp.setContentType("text/plain");
 
         JobOperator jobOperator = BatchRuntime.getJobOperator();
-        List<Long> runningExecutions = jobOperator.getRunningExecutions(JOB_NAME);
+        try {
+            List<Long> runningExecutions = jobOperator.getRunningExecutions(JOB_NAME);
 
-        if (runningExecutions.size() > 0) {
-            resp.getOutputStream().println("Job already running.");
-            logger.infof("Jobs already running: ", runningExecutions.size());
-        } else {
-            long executionId = jobOperator.start(JOB_NAME, new Properties());
-            logger.infof("Started job ID %d", executionId);
-            resp.getOutputStream().println("Started execution ID: " + executionId);
+            if (runningExecutions.size() > 0) {
+                resp.getOutputStream().println("Job already running.");
+                logger.infof("Jobs already running: ", runningExecutions.size());
+                return;
+            }
+        } catch (NoSuchJobException e) {
+            // pass
         }
+
+        long executionId = jobOperator.start(JOB_NAME, new Properties());
+        logger.infof("Started job ID %d", executionId);
+        resp.getOutputStream().println("Started execution ID: " + executionId);
     }
 }

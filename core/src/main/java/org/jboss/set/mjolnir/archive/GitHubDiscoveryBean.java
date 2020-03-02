@@ -38,10 +38,11 @@ public class GitHubDiscoveryBean {
                 .collect(Collectors.toList());
 
         Set<Repository> userRepositories = new HashSet<>();
-        for (Repository repository : privateRepositories) {
-            List<Repository> forks = repositoryService.getForks(repository);
+        for (Repository sourceRepository : privateRepositories) {
+            List<Repository> forks = repositoryService.getForks(sourceRepository);
             forks.stream()
                     .filter(fork -> githubUser.equals(fork.getOwner().getLogin()))
+                    .peek(repository -> repository.setSource(sourceRepository)) // set organization's repository as the source repository
                     .forEach(userRepositories::add);
         }
 

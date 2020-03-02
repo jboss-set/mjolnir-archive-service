@@ -17,6 +17,7 @@ import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
 import java.sql.Date;
 import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -123,6 +124,9 @@ public class UserRemoval {
     }
 
     public List<RepositoryFork> getForks() {
+        if (forks == null) {
+            forks = new ArrayList<>();
+        }
         return forks;
     }
 
