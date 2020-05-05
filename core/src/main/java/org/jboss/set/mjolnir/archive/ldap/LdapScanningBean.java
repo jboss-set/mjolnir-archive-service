@@ -190,22 +190,38 @@ public class LdapScanningBean {
     void createUserRemovals(Collection<String> krbNames) {
         em.getTransaction().begin();
 
-        List<UserRemoval> existingRemovalsToProcess =
-                em.createNamedQuery(UserRemoval.FIND_REMOVALS_TO_PROCESS, UserRemoval.class).getResultList();
-        Set<String> existingUsernamesToProcess =
-                existingRemovalsToProcess.stream().map(UserRemoval::getUsername).collect(Collectors.toSet());
+        Set<String> existingUserNamesToProcess = getExistingUserNamesToProcess();
 
         krbNames.forEach(username -> {
-            if (existingUsernamesToProcess.contains(username)) {
-                logger.infof("Removal record for user %s already exists", username);
-            } else {
-                logger.infof("Creating removal record for user %s", username);
-                UserRemoval removal = new UserRemoval();
-                removal.setUsername(username);
-                em.persist(removal);
-            }
+            createUniqueUserRemoval(existingUserNamesToProcess, username);
         });
 
         em.getTransaction().commit();
+    }
+
+    public void createUserRemoval(String krbName) {
+        em.getTransaction().begin();
+
+        Set<String> existingUserNamesToProcess = getExistingUserNamesToProcess();
+        createUniqueUserRemoval(existingUserNamesToProcess, krbName);
+
+        em.getTransaction().commit();
+    }
+
+    private Set<String> getExistingUserNamesToProcess() {
+        List<UserRemoval> existingRemovalsToProcess =
+                em.createNamedQuery(UserRemoval.FIND_REMOVALS_TO_PROCESS, UserRemoval.class).getResultList();
+        return existingRemovalsToProcess.stream().map(UserRemoval::getUsername).collect(Collectors.toSet());
+    }
+
+    private void createUniqueUserRemoval(Set<String> existingUserNamesToProcess, String userName) {
+        if (existingUserNamesToProcess.contains(userName)) {
+            logger.infof("Removal record for user %s already exists", userName);
+        } else {
+            logger.infof("Creating removal record for user %s", userName);
+            UserRemoval removal = new UserRemoval();
+            removal.setUsername(userName);
+            em.persist(removal);
+        }
     }
 }

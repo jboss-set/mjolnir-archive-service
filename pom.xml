@@ -30,6 +30,7 @@
         <version.jberet>1.0.2.Final</version.jberet>
         <version.deltaspike>1.9.3</version.deltaspike>
         <version.j2html>1.4.0</version.j2html>
+        <version.json>20190722</version.json>
     </properties>
 
     <dependencyManagement>
@@ -75,6 +76,12 @@
                 <groupId>com.j2html</groupId>
                 <artifactId>j2html</artifactId>
                 <version>${version.j2html}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.json</groupId>
+                <artifactId>json</artifactId>
+                <version>${version.json}</version>
             </dependency>
 
             <!-- Test dependencies -->
