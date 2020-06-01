@@ -20,6 +20,7 @@ public class ConfigurationProducer {
     private final static String GITHUB_TOKEN_KEY = "github.token";
     private final static String REPOSITORY_ARCHIVE_ROOT_KEY = "application.archive_root";
     private final static String UNSUBSCRIBE_USERS = "application.unsubscribe_users";
+    private final static String CREATE_REMOVALS = "application.create_removals";
     private final static String REPORTING_EMAIL = "application.reporting_email";
     private final static String LDAP_URL = "ldap.url";
     private final static String LDAP_SEARCH_CONTEXT = "ldap.search_context";
@@ -51,6 +52,9 @@ public class ConfigurationProducer {
                     case UNSUBSCRIBE_USERS:
                         boolean boolValue = Boolean.parseBoolean(value);
                         configurationBuilder.setUnsubscribeUsers(boolValue);
+                        break;
+                    case CREATE_REMOVALS:
+                        configurationBuilder.setCreateRemovals(Boolean.parseBoolean(value));
                         break;
                     case REPORTING_EMAIL:
                         configurationBuilder.setReportingEmail(value);

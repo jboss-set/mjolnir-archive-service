@@ -4,6 +4,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.eclipse.egit.github.core.Team;
 import org.eclipse.egit.github.core.User;
 import org.jboss.logging.Logger;
+import org.jboss.set.mjolnir.archive.configuration.Configuration;
 import org.jboss.set.mjolnir.archive.domain.GitHubOrganization;
 import org.jboss.set.mjolnir.archive.domain.RegisteredUser;
 import org.jboss.set.mjolnir.archive.domain.RemovalLog;
@@ -39,6 +40,9 @@ public class LdapScanningBean {
     private final Logger logger = Logger.getLogger(getClass());
 
     @Inject
+    private Configuration configuration;
+
+    @Inject
     private EntityManager em;
 
     @Inject
@@ -52,24 +56,34 @@ public class LdapScanningBean {
 
 
     public void createRemovalsForUsersWithoutLdapAccount() {
-        try {
-            doCreateRemovalsForUsersWithoutLdapAccount();
-        } catch (IOException | NamingException e) {
-            logger.error("Failed to create user removals", e);
-            RemovalLog log = new RemovalLog();
-            log.setStackTrace(e);
-            log.setMessage("Failed to create user removals");
+        if (configuration.isCreateRemovals()) {
+            try {
+                doCreateRemovalsForUsersWithoutLdapAccount();
+            } catch (IOException | NamingException e) {
+                logger.error("Failed to create user removals", e);
+                RemovalLog log = new RemovalLog();
+                log.setStackTrace(e);
+                log.setMessage("Failed to create user removals");
 
-            EntityTransaction transaction = em.getTransaction();
-            transaction.begin();
-            em.persist(log);
-            transaction.commit();
+                EntityTransaction transaction = em.getTransaction();
+                transaction.begin();
+                em.persist(log);
+                transaction.commit();
+            }
         }
     }
 
     void doCreateRemovalsForUsersWithoutLdapAccount() throws IOException, NamingException {
         logger.infof("Starting job to create user removals");
 
+        // get users without ldap account
+        Set<String> usersWithoutLdapAccount = getUsersWithoutLdapAccount();
+
+        // create removal records
+        createUserRemovals(usersWithoutLdapAccount);
+    }
+
+    public Set<String> getUsersWithoutLdapAccount() throws IOException, NamingException {
         // collect members of all teams
         Set<String> allMembers = getAllOrganizationsMembers();
         logger.infof("Found %d members of all organizations teams.", allMembers.size());
@@ -92,14 +106,13 @@ public class LdapScanningBean {
 
         // search for users that do not have active LDAP account
         Map<String, Boolean> usersLdapMap = ldapDiscoveryBean.checkUsersExists(krbNames);
-        Set<String> usersWithoutLdapAccount = usersLdapMap.entrySet().stream()
+        SortedSet<String> usersWithoutLdapAccount = (SortedSet<String>) usersLdapMap.entrySet().stream()
                 .filter(entry -> !entry.getValue())
                 .map(Map.Entry::getKey)
                 .collect(Collectors.toSet());
         logger.infof("Detected %d users that do not have active LDAP account.", usersWithoutLdapAccount.size());
 
-        // create removal records
-        createUserRemovals(usersWithoutLdapAccount);
+        return usersWithoutLdapAccount;
     }
 
     public Set<RegisteredUser> getWhitelistedUsersWithoutLdapAccount() throws NamingException {
