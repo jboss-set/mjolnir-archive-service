@@ -106,10 +106,10 @@ public class LdapScanningBean {
 
         // search for users that do not have active LDAP account
         Map<String, Boolean> usersLdapMap = ldapDiscoveryBean.checkUsersExists(krbNames);
-        SortedSet<String> usersWithoutLdapAccount = (SortedSet<String>) usersLdapMap.entrySet().stream()
+        SortedSet<String> usersWithoutLdapAccount = usersLdapMap.entrySet().stream()
                 .filter(entry -> !entry.getValue())
                 .map(Map.Entry::getKey)
-                .collect(Collectors.toSet());
+                .collect(Collectors.toCollection(TreeSet::new));
         logger.infof("Detected %d users that do not have active LDAP account.", usersWithoutLdapAccount.size());
 
         return usersWithoutLdapAccount;

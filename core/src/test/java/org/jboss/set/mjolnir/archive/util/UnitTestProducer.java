@@ -55,6 +55,7 @@ public class UnitTestProducer {
         return new Configuration.ConfigurationBuilder()
                 .setGitHubToken("")
                 .setGitHubApiUri(new URI("http://localhost:8089"))
+                .setCreateRemovals(true)
                 .build();
     }
 
