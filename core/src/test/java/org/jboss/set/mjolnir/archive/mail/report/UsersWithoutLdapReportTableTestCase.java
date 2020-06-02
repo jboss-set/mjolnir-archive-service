@@ -41,7 +41,7 @@ public class UsersWithoutLdapReportTableTestCase {
     @Inject
     private EntityManager em;
 
-@Inject
+    @Inject
     private LdapScanningBean ldapScanningBean;
 
     @Inject
