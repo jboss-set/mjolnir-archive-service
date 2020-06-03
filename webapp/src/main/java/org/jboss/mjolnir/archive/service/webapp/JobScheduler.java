@@ -2,6 +2,7 @@ package org.jboss.mjolnir.archive.service.webapp;
 
 
 import org.jboss.logging.Logger;
+import org.jboss.set.mjolnir.archive.configuration.Configuration;
 import org.jboss.set.mjolnir.archive.ldap.LdapScanningBean;
 
 import javax.batch.operations.JobOperator;
@@ -24,13 +25,18 @@ public class JobScheduler {
     private final Logger logger = Logger.getLogger(getClass());
 
     @Inject
+    private Configuration configuration;
+
+    @Inject
     private LdapScanningBean ldapScanningBean;
 
 
     @Schedule(hour = "3", persistent = false)
     public void ldapScan() {
-        logger.infof("Starting task ldapScan");
-        ldapScanningBean.createRemovalsForUsersWithoutLdapAccount();
+        if (configuration.isRemoveUsersWithoutLdapAccount()) {
+            logger.infof("Starting task ldapScan");
+            ldapScanningBean.createRemovalsForUsersWithoutLdapAccount();
+        }
     }
 
     @Schedule(hour = "4", persistent = false)

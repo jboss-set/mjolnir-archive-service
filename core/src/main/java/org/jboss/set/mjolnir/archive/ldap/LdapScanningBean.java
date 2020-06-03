@@ -40,9 +40,6 @@ public class LdapScanningBean {
     private final Logger logger = Logger.getLogger(getClass());
 
     @Inject
-    private Configuration configuration;
-
-    @Inject
     private EntityManager em;
 
     @Inject
@@ -56,21 +53,20 @@ public class LdapScanningBean {
 
 
     public void createRemovalsForUsersWithoutLdapAccount() {
-        if (configuration.isCreateRemovals()) {
-            try {
-                doCreateRemovalsForUsersWithoutLdapAccount();
-            } catch (IOException | NamingException e) {
-                logger.error("Failed to create user removals", e);
-                RemovalLog log = new RemovalLog();
-                log.setStackTrace(e);
-                log.setMessage("Failed to create user removals");
+        try {
+            doCreateRemovalsForUsersWithoutLdapAccount();
+        } catch (IOException | NamingException e) {
+            logger.error("Failed to create user removals", e);
+            RemovalLog log = new RemovalLog();
+            log.setStackTrace(e);
+            log.setMessage("Failed to create user removals");
 
-                EntityTransaction transaction = em.getTransaction();
-                transaction.begin();
-                em.persist(log);
-                transaction.commit();
-            }
+            EntityTransaction transaction = em.getTransaction();
+            transaction.begin();
+            em.persist(log);
+            transaction.commit();
         }
+
     }
 
     void doCreateRemovalsForUsersWithoutLdapAccount() throws IOException, NamingException {
