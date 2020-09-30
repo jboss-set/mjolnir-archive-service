@@ -21,8 +21,6 @@ public class UsersWithoutLdapReportTable implements ReportTable {
 
     private static final String REPORT_TABLE_TITLE = "Users without an LDAP Account";
 
-    private static final String NAME_LABEL = "GH Username";
-
     @Inject
     private LdapScanningBean ldapScanningBean;
 
@@ -34,7 +32,7 @@ public class UsersWithoutLdapReportTable implements ReportTable {
                         .withStyle(Styles.SUB_HEADING_STYLE),
                 table().withStyle(Styles.TABLE_STYLE + Styles.TD_STYLE).with(
                         tr().with(
-                                th(NAME_LABEL).withStyle(Styles.TH_STYLE)
+                                th(Constants.LDAP_NAME).withStyle(Styles.TH_STYLE)
                         ),
                         addUserWithoutLdapRows(getUsersWithoutLdap())
                 ))

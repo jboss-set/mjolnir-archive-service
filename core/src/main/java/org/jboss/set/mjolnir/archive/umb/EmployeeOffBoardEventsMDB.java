@@ -23,12 +23,12 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.stream.Collectors;
 
-@MessageDriven(name = "EmployeeOffBoardEventsMDB", activationConfig = {
+/*@MessageDriven(name = "EmployeeOffBoardEventsMDB", activationConfig = {
         @ActivationConfigProperty(propertyName = "destinationType", propertyValue = "javax.jms.Queue"),
         @ActivationConfigProperty(propertyName = "useJndi", propertyValue = "true"),
         @ActivationConfigProperty(propertyName = "destination", propertyValue = "java:/queue/EmployeeEventsQueue"), // JNDI name
         @ActivationConfigProperty(propertyName = "acknowledgeMode", propertyValue = "Auto-acknowledge")})
-@ResourceAdapter(value = "activemq-rar.rar")
+@ResourceAdapter(value = "activemq-rar.rar")*/
 public class EmployeeOffBoardEventsMDB implements MessageListener {
 
     private static final String OFF_BOARD_EVENT = "offboard";

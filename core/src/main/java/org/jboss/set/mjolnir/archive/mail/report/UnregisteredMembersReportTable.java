@@ -25,9 +25,6 @@ import static j2html.TagCreator.ul;
 
 public class UnregisteredMembersReportTable implements ReportTable {
 
-    private static final String NAME_LABEL = "GH Username";
-    private static final String TEAM_LABEL = "Teams";
-
     @Inject
     private LdapScanningBean ldapScanningBean;
 
@@ -39,8 +36,8 @@ public class UnregisteredMembersReportTable implements ReportTable {
                         .withStyle(Styles.SUB_HEADING_STYLE),
                 table().withStyle(Styles.TABLE_STYLE + Styles.TD_STYLE).with(
                         tr().with(
-                                th(NAME_LABEL).withStyle(Styles.TH_STYLE),
-                                th(TEAM_LABEL).withStyle(Styles.TH_STYLE)
+                                th(Constants.LDAP_NAME).withStyle(Styles.TH_STYLE),
+                                th(Constants.TEAMS).withStyle(Styles.TH_STYLE)
                         ),
                         addUnregisteredOrganizationMembersRows(getUnregisteredMembersWithTeams())
                 ))

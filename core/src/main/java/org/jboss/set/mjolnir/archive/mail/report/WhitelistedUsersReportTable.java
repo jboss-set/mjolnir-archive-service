@@ -18,8 +18,6 @@ import static j2html.TagCreator.tr;
 
 public class WhitelistedUsersReportTable implements ReportTable {
 
-    private static final String NAME_LABEL = "Name";
-    private static final String RESPONSIBLE_PERSON_LABEL = "Responsible person";
     private static final String REPORT_TABLE_TITLE = "Whitelisted Users";
 
     @Inject
@@ -31,8 +29,8 @@ public class WhitelistedUsersReportTable implements ReportTable {
                 h2(REPORT_TABLE_TITLE).withStyle(Styles.H2_STYLE),
                 table().withStyle(Styles.TABLE_STYLE + Styles.TD_STYLE).with(
                         tr().with(
-                                th(NAME_LABEL).withStyle(Styles.TH_STYLE),
-                                th(RESPONSIBLE_PERSON_LABEL).withStyle(Styles.TH_STYLE)
+                                th(Constants.LDAP_NAME).withStyle(Styles.TH_STYLE),
+                                th(Constants.RESPONSIBLE_PERSON).withStyle(Styles.TH_STYLE)
                         ),
                         addWhitelistedUserRows(getWhitelistedUsers())
                 ))
