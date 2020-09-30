@@ -37,4 +37,9 @@ public class RegisteredUserRepositoryBean {
         query.setParameter("githubName", username.toLowerCase());
         return findSingleResult(query);
     }
+
+    public List<RegisteredUser> getAllUsers() {
+        List<RegisteredUser> listOfUsersTable = em.createNamedQuery(RegisteredUser.FIND_ALL).getResultList();
+        return listOfUsersTable;
+    }
 }
