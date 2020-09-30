@@ -11,4 +11,4 @@ insert into application_parameters (param_name, param_value) values ('applicatio
 insert into application_parameters (param_name, param_value) values ('ldap.url', 'ldap://ldap.example.com');
 insert into application_parameters (param_name, param_value) values ('ldap.search_context', 'ou=users,dc=example,dc=com');
 
-insert into users (krb_name, github_name) values ('thofman', 'TomasHofman');
+insert into users (krb_name, github_name, note, admin, whitelisted, responsible_person) values ('thofman', 'TomasHofman', null, false, false, "existing");
