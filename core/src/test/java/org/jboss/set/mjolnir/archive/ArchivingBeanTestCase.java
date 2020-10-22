@@ -4,6 +4,8 @@ import org.eclipse.egit.github.core.Repository;
 import org.eclipse.egit.github.core.User;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.ListBranchCommand;
+import org.eclipse.jgit.api.errors.GitAPIException;
+import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.URIish;
 import org.jboss.set.mjolnir.archive.configuration.Configuration;
@@ -14,6 +16,7 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 
@@ -25,7 +28,7 @@ public class ArchivingBeanTestCase {
     public TemporaryFolder tempDir = new TemporaryFolder();
 
     private Repository userRepository;
-
+    private Repository archiveRepo;
     private File sourceRepositoryDir;
     private File forkedRepositoryDir;
     private File archiveDir;
@@ -69,6 +72,13 @@ public class ArchivingBeanTestCase {
         userRepository.setName("testrepo");
         userRepository.setOwner(githubUser);
         userRepository.setSource(sourceRepository);
+
+        archiveRepo = new Repository();
+        archiveRepo.setCloneUrl(archiveDir.getAbsolutePath());
+        archiveRepo.setName("testarchiverepo");
+        archiveRepo.setOwner(githubUser);
+        archiveRepo.setSource(sourceRepository);
+
     }
 
     @Test
@@ -105,6 +115,22 @@ public class ArchivingBeanTestCase {
                     .containsOnly("refs/heads/master",
                             "refs/remotes/TomasHofman/master",
                             "refs/remotes/TomasHofman/feature");
+
+            // verify that all branches are deleted
+
+            List<Ref> refs = archivedRepository.branchList().setListMode(ListBranchCommand.ListMode.ALL).call();
+            Git git = Git.open(new File(archiveDir, "testorg/testrepo"));
+             refs.forEach(ref -> {
+                    try {
+                        if (ref.getName().contains("TomasHofman/")) {
+                            assertThat(git.branchDelete().setBranchNames(ref.getName()).setForce(true).call());
+                        }
+
+                    } catch (GitAPIException e) {
+                        e.printStackTrace();
+                    }
+                });
+
         }
     }
 
@@ -113,4 +139,6 @@ public class ArchivingBeanTestCase {
         Assert.assertTrue(first.isPresent());
         return first.get();
     }
+
+
 }

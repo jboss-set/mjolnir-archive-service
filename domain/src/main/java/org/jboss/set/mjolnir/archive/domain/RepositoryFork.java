@@ -1,24 +1,25 @@
 package org.jboss.set.mjolnir.archive.domain;
 
+import javax.persistence.*;
+
 import org.hibernate.annotations.CreationTimestamp;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.JoinColumn;
-import javax.persistence.ManyToOne;
-import javax.persistence.SequenceGenerator;
-import javax.persistence.Table;
 import java.sql.Timestamp;
 
 /**
  * Stores information about discovered repository forks of removed user.
  */
+@NamedQueries({
+        @NamedQuery(name = RepositoryFork.FIND_REMOVALS,
+                query = "SELECT r FROM RepositoryFork r where r.deleted is NULL")
+})
 @Entity
 @Table(name = "repository_forks")
 public class RepositoryFork {
+
+    public static final String FIND_REMOVALS = "RepositoryFork.findRemovals";
+
+
 
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "repository_forks_generator")
@@ -43,9 +44,14 @@ public class RepositoryFork {
 
     @CreationTimestamp
     private Timestamp created;
+    
+    private Timestamp deleted;
 
     public Long getId() {
         return id;
+    }
+    public void setId(Long id) {
+        this.id = id;
     }
 
     public String getRepositoryName() {
@@ -95,5 +101,9 @@ public class RepositoryFork {
     public void setCreated(Timestamp created) {
         this.created = created;
     }
+
+    public Timestamp getDeleted() { return deleted; }
+
+    public void setDeleted(Timestamp deleted) { this.deleted = deleted; }
 
 }

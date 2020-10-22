@@ -24,6 +24,8 @@ public class ConfigurationProducer {
     private final static String REPORTING_EMAIL = "application.reporting_email";
     private final static String LDAP_URL = "ldap.url";
     private final static String LDAP_SEARCH_CONTEXT = "ldap.search_context";
+    private final static String REMOVE_ARCHIVES = "application.remove_archives";
+    private final static String REMOVE_ARCHIVES_AFTER= "application.remove_archives_after";
 
     private Logger logger = Logger.getLogger(getClass());
 
@@ -64,6 +66,12 @@ public class ConfigurationProducer {
                         break;
                     case LDAP_SEARCH_CONTEXT:
                         configurationBuilder.setLdapSearchContext(value);
+                        break;
+                    case REMOVE_ARCHIVES:
+                        configurationBuilder.setRemoveArchives(Boolean.parseBoolean(value));
+                        break;
+                    case REMOVE_ARCHIVES_AFTER:
+                        configurationBuilder.setRemoveArchivesAfter(Integer.parseInt(value));
                         break;
                     default:
                         logger.infof("Skipping configuration parameter %s", name);

@@ -61,5 +61,27 @@ public class JobScheduler {
         long executionId = jobOperator.start(Constants.BATCH_JOB_NAME, new Properties());
         logger.infof("Started batch job # %d", executionId);
     }
+    @Schedule(dayOfWeek = "6", persistent = false)
+    public void remove_archived_users() {
+        logger.infof("Starting task archiveUsers");
+
+        // check if batch jobs are already running
+        JobOperator jobOperator = BatchRuntime.getJobOperator();
+        try {
+            List<Long> runningExecutions = jobOperator.getRunningExecutions(Constants.ARCHIVAL_BATCH_JOB_NAME);
+
+            if (runningExecutions.size() > 0) {
+                logger.infof("%d jobs with name %s are already running. Batch job is not started now.",
+                        runningExecutions.size(), Constants.ARCHIVAL_BATCH_JOB_NAME);
+                return;
+            }
+        } catch (NoSuchJobException e) {
+            logger.infof("No jobs with name %s found.", Constants.ARCHIVAL_BATCH_JOB_NAME);
+        }
+
+        // if no job is currently running, start new one
+        long executionId = jobOperator.start(Constants.ARCHIVAL_BATCH_JOB_NAME, new Properties());
+        logger.infof("Started batch job # %d", executionId);
+    }
 
 }

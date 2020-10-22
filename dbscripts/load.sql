@@ -12,3 +12,5 @@ insert into application_parameters (param_name, param_value) values ('ldap.url',
 insert into application_parameters (param_name, param_value) values ('ldap.search_context', 'ou=users,dc=example,dc=com');
 
 insert into users (krb_name, github_name) values ('thofman', 'TomasHofman');
+insert into APPLICATION_PARAMETERS (PARAM_NAME,PARAM_VALUE) values ('application.remove_archives', 'false');
+insert into APPLICATION_PARAMETERS (PARAM_NAME,PARAM_VALUE) values ('application.remove_archives_after', '90');
