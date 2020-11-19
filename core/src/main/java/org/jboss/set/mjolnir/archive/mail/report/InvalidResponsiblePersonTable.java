@@ -5,13 +5,10 @@ import org.apache.commons.lang3.StringUtils;
 import org.jboss.set.mjolnir.archive.domain.RegisteredUser;
 import org.jboss.set.mjolnir.archive.domain.repositories.RegisteredUserRepositoryBean;
 import org.jboss.set.mjolnir.archive.ldap.LdapDiscoveryBean;
-import org.jboss.set.mjolnir.archive.ldap.LdapScanningBean;
 
 import javax.inject.Inject;
 import javax.naming.NamingException;
-import javax.persistence.EntityManager;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -21,6 +18,7 @@ import java.util.stream.Collectors;
 import static j2html.TagCreator.div;
 import static j2html.TagCreator.each;
 import static j2html.TagCreator.h2;
+import static j2html.TagCreator.p;
 import static j2html.TagCreator.table;
 import static j2html.TagCreator.td;
 import static j2html.TagCreator.th;
@@ -28,15 +26,7 @@ import static j2html.TagCreator.tr;
 
 public class InvalidResponsiblePersonTable implements ReportTable {
 
-    private static final String NAME_LABEL = "Name";
-    private static final String RESPONSIBLE_PERSON_LABEL = "Responsible person";
-    private static final String REPORT_TABLE_TITLE = "Responsible Person contains Inactive LDAP Account";
-
-    @Inject
-    LdapScanningBean ldapScanningBean;
-
-    @Inject
-    private EntityManager em;
+    private static final String REPORT_TABLE_TITLE = "Invalid Responsible Persons";
 
     @Inject
     private LdapDiscoveryBean ldapDiscoveryBean;
@@ -45,23 +35,25 @@ public class InvalidResponsiblePersonTable implements ReportTable {
     private RegisteredUserRepositoryBean userRepositoryBean;
 
     @Override
-    public String composeTable() throws IOException, NamingException {
-        String html = div().with(
+    public String composeTable() throws NamingException {
+        return div().with(
                 h2(REPORT_TABLE_TITLE).withStyle(Styles.H2_STYLE),
+                p("Responsible person is not an LDAP name of an existing user.").withStyle(Styles.SUB_HEADING_STYLE),
                 table().withStyle(Styles.TABLE_STYLE + Styles.TD_STYLE).with(
                         tr().with(
-                                th(NAME_LABEL).withStyle(Styles.TH_STYLE),
-                                th(RESPONSIBLE_PERSON_LABEL).withStyle(Styles.TH_STYLE)
+                                th(Constants.LDAP_NAME).withStyle(Styles.TH_STYLE),
+                                th(Constants.GH_NAME).withStyle(Styles.TH_STYLE),
+                                th(Constants.RESPONSIBLE_PERSON).withStyle(Styles.TH_STYLE)
                         ),
                         addInvalidUserIds(getInvalidLdapUser())
                 ))
                 .render();
-        return html;
     }
 
     private static DomContent addInvalidUserIds(List<RegisteredUser> invalidIds) {
         return each(invalidIds, user -> tr(
                 td(ReportUtils.stringOrEmpty(user.getKerberosName())).withStyle(Styles.TD_STYLE),
+                td(ReportUtils.stringOrEmpty(user.getGithubName())).withStyle(Styles.TD_STYLE),
                 td(ReportUtils.stringOrEmpty(user.getResponsiblePerson())).withStyle(Styles.TD_STYLE)
         ));
     }

@@ -103,7 +103,6 @@ public class UsersWithoutLdapReportTableTestCase {
         Document doc = Jsoup.parse(messageBody);
 
         assertThat(doc.select("tr").size()).isEqualTo(users.size() + 1);
-        assertThat(doc.select("th").text()).isEqualTo("GH Username");
 
         Elements elements = doc.select("td");
         assertThat(elements.size()).isEqualTo(users.size());

@@ -5,7 +5,6 @@ import org.apache.deltaspike.core.util.ArraysUtils;
 import org.apache.deltaspike.testcontrol.api.junit.CdiTestRunner;
 import org.jboss.set.mjolnir.archive.domain.RegisteredUser;
 import org.jboss.set.mjolnir.archive.ldap.LdapDiscoveryBean;
-import org.jboss.set.mjolnir.archive.ldap.LdapScanningBean;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
@@ -18,7 +17,6 @@ import javax.inject.Inject;
 import javax.naming.NamingException;
 import javax.persistence.EntityManager;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 
@@ -33,9 +31,6 @@ public class InvalidResponsiblePersonTableTestCase {
 
     @Inject
     private EntityManager em;
-
-    @Inject
-    private LdapScanningBean ldapScanningBean;
 
     @Inject
     private InvalidResponsiblePersonTable invalidResponsiblePersonTable;
@@ -77,7 +72,7 @@ public class InvalidResponsiblePersonTableTestCase {
     }
 
     @Test
-    public void testComposeTableBody() throws NamingException, IOException {
+    public void testComposeTableBody() throws NamingException {
 
         List<RegisteredUser> listOfInvalidResponsiblePerson = invalidResponsiblePersonTable.getInvalidLdapUser();
         assertThat(listOfInvalidResponsiblePerson).extracting(RegisteredUser::getKerberosName).containsOnly("joe", "bruno");
@@ -86,14 +81,11 @@ public class InvalidResponsiblePersonTableTestCase {
         Document doc = Jsoup.parse(messageBody);
 
         assertThat(doc.select("tr").size()).isEqualTo(listOfInvalidResponsiblePerson.size() + 1);
-        assertThat(doc.select("th").text()).isEqualTo("Name Responsible person");
 
         Elements elements = doc.select("td");
-        assertThat(elements.size()).isEqualTo(listOfInvalidResponsiblePerson.size() * 2);
-        assertThat(elements.get(1).text()).contains("Responsible guy");
-        assertThat(elements.get(3).text()).contains("Responsible guy1");
-
-
+        assertThat(elements.size()).isEqualTo(listOfInvalidResponsiblePerson.size() * 3);
+        assertThat(elements.get(2).text()).contains("Responsible guy");
+        assertThat(elements.get(5).text()).contains("Responsible guy1");
 
     }
 }
