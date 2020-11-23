@@ -2,6 +2,7 @@ package org.jboss.set.mjolnir.archive.mail;
 
 import org.jboss.logging.Logger;
 import org.jboss.set.mjolnir.archive.configuration.Configuration;
+import org.jboss.set.mjolnir.archive.mail.report.InvalidResponsiblePersonTable;
 import org.jboss.set.mjolnir.archive.mail.report.RemovalsReportTable;
 import org.jboss.set.mjolnir.archive.mail.report.ReportTable;
 import org.jboss.set.mjolnir.archive.mail.report.UnregisteredMembersReportTable;
@@ -18,7 +19,8 @@ import javax.naming.NamingException;
 import java.io.IOException;
 import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 
 @Singleton
 @TransactionManagement(TransactionManagementType.BEAN) // do not open managed transaction
@@ -49,6 +51,9 @@ public class ReportScheduler {
     @Inject
     private UnregisteredMembersReportTable unregisteredMembersReportTable;
 
+    @Inject
+    private InvalidResponsiblePersonTable invalidUserId;
+
     @Schedule(dayOfWeek="Sun", hour="0", persistent = false)
     public void sendMail() throws IOException, NamingException {
         String fromAddress = configuration.getReportingEmail();
@@ -62,6 +67,7 @@ public class ReportScheduler {
         reportTables.add(usersWithoutLdapReportTable);
         reportTables.add(whitelistedUsersReportTable);
         reportTables.add(unregisteredMembersReportTable);
+        reportTables.add(invalidUserId);
 
         String body = mailBodyMessageProducer.composeMessageBody(reportTables);
 

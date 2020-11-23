@@ -14,12 +14,6 @@ import static j2html.TagCreator.th;
 
 public class RemovalsReportTable implements ReportTable {
 
-    private static final String LDAP_NAME_LABEL = "LDAP Name";
-    private static final String GH_NAME_LABEL = "GH Name";
-    private static final String CREATED_LABEL = "Created";
-    private static final String STARTED_LABEL = "Started";
-    private static final String STATUS_LABEL = "Status";
-
     @Inject
     private RemovalsReportBean removalsReportBean;
 
@@ -30,11 +24,11 @@ public class RemovalsReportTable implements ReportTable {
                 p("...performed during the last week").withStyle(Styles.SUB_HEADING_STYLE),
                 table().withStyle(Styles.TABLE_STYLE + Styles.TD_STYLE).with(
                         tr().with(
-                                th(LDAP_NAME_LABEL).withStyle(Styles.TH_STYLE),
-                                th(GH_NAME_LABEL).withStyle(Styles.TH_STYLE),
-                                th(CREATED_LABEL).withStyle(Styles.TH_STYLE),
-                                th(STARTED_LABEL).withStyle(Styles.TH_STYLE),
-                                th(STATUS_LABEL).withStyle(Styles.TH_STYLE)
+                                th(Constants.LDAP_NAME).withStyle(Styles.TH_STYLE),
+                                th(Constants.GH_NAME).withStyle(Styles.TH_STYLE),
+                                th(Constants.CREATED).withStyle(Styles.TH_STYLE),
+                                th(Constants.STARTED).withStyle(Styles.TH_STYLE),
+                                th(Constants.STATUS).withStyle(Styles.TH_STYLE)
                         ),
                         addUserRemovalRows(getRemovals())
                 )).render();

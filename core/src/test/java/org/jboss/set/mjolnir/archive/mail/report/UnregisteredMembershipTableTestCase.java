@@ -97,7 +97,6 @@ public class UnregisteredMembershipTableTestCase {
         String messageBody = unregisteredMembersReportTable.composeTable();
         Document doc = Jsoup.parse(messageBody);
 
-        assertThat(doc.select("th").text()).isEqualTo("GH Username Teams");
         assertThat(doc.select("tr").size()).isEqualTo(testUserTeams.size());
 
         Elements elements = doc.select("td");

@@ -105,7 +105,6 @@ public class WhitelistedUsersReportTableTestCase {
         Document doc = Jsoup.parse(messageBody);
 
         assertThat(doc.select("tr").size()).isEqualTo(users.size() + 1);
-        assertThat(doc.select("th").text()).isEqualTo("Name Responsible person");
 
         Elements elements = doc.select("td");
         assertThat(elements.size()).isEqualTo(users.size() * 2);
