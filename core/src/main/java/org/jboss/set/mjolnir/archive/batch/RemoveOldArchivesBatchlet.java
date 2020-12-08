@@ -12,6 +12,7 @@ import javax.inject.Named;
 import javax.persistence.EntityManager;
 import javax.persistence.EntityTransaction;
 import javax.persistence.TypedQuery;
+import java.io.File;
 import java.sql.Timestamp;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -25,8 +26,16 @@ import java.util.Comparator;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+/**
+ * This batchlet removes repository branches that are archived for longer than given number of days.
+ *
+ * Configurable by following parameters:
+ *
+ * - application.remove_archives - if false, this batchlet is effectively disabled.
+ * - application.remove_archives_after - number of days that the branches must be archived, before they can be removed.
+ */
 @Named
-public class RemoveArchieveUserBatchlet extends AbstractBatchlet {
+public class RemoveOldArchivesBatchlet extends AbstractBatchlet {
 
     private final Logger logger = Logger.getLogger(getClass());
 
@@ -39,29 +48,28 @@ public class RemoveArchieveUserBatchlet extends AbstractBatchlet {
     @Override
     public String process() throws Exception {
 
-        logger.infof("User removal process started");
-        boolean successful = false;
-        if (configuration.getRemoveArchives() == true) {
+        logger.infof("RemoveArchiveUserBatchlet started");
+
+        if (configuration.getRemoveArchives()) {
+            logger.infof("Removing old repository branches");
+
+            boolean successful = true;
+
             Map<String, RepositoryFork> removalsMap = loadRepositoryForks();
             List<RepositoryFork> filteredList = getFilterDeleteList(removalsMap);
-            try {
-                for (RepositoryFork repositoryFork : filteredList) {
-                   GitArchiveRepository repository = new GitArchiveRepository();
-                   boolean status =  repository.gitRemoveBranches(configuration.getRepositoryArchiveRoot() + "/" + repositoryFork.getSourceRepositoryName(),
+            for (RepositoryFork repositoryFork : filteredList) {
+                logger.infof("Removing branches for %s", repositoryFork.getRepositoryName());
+
+                try {
+                    File gitDir = new File(configuration.getRepositoryArchiveRoot() + "/" + repositoryFork.getSourceRepositoryName());
+                    GitArchiveRepository repository = new GitArchiveRepository(gitDir);
+                    repository.removeRemoteBranches(
                             repositoryFork.getRepositoryName().substring(0, repositoryFork.getRepositoryName().indexOf('/')));
-
-                    if (status) {
-                        updateDeletedRecordDate(repositoryFork);
-                        successful = true;
-                        repository = null;
-                    }
-
+                    updateDeletedRecordDate(repositoryFork);
+                } catch (Exception exception) {
+                    logger.errorf("Failed to remove repository branches for %s", repositoryFork.getRepositoryName(), exception);
+                    successful = false;
                 }
-
-            } catch (Exception exception) {
-                exception.printStackTrace();
-                successful = false;
-
             }
 
             if (successful) {
@@ -70,6 +78,7 @@ public class RemoveArchieveUserBatchlet extends AbstractBatchlet {
                 return Constants.DONE_WITH_ERRORS;
             }
         } else {
+            logger.infof("Removing of old repository branches is disabled");
             return Constants.APPLICATION_REMOVE_ARCHIEVE_NOT_APPLICABLE;
         }
     }

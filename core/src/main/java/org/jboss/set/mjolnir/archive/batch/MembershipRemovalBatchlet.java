@@ -29,6 +29,9 @@ import java.util.stream.Collectors;
 
 /**
  * Batchlet that handles the user removal process.
+ *
+ * Gets fresh removal records from db (those records are created by a MDB listening for employee offboarding messages),
+ * archives their private repositories, and removes their access to our GitHub Teams.
  */
 @Named
 public class MembershipRemovalBatchlet extends AbstractBatchlet {
