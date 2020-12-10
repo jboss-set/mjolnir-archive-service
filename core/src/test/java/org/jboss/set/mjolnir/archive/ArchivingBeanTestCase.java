@@ -16,7 +16,6 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 
@@ -120,16 +119,15 @@ public class ArchivingBeanTestCase {
 
             List<Ref> refs = archivedRepository.branchList().setListMode(ListBranchCommand.ListMode.ALL).call();
             Git git = Git.open(new File(archiveDir, "testorg/testrepo"));
-             refs.forEach(ref -> {
-                    try {
-                        if (ref.getName().contains("TomasHofman/")) {
-                            assertThat(git.branchDelete().setBranchNames(ref.getName()).setForce(true).call());
-                        }
-
-                    } catch (GitAPIException e) {
-                        e.printStackTrace();
+            refs.forEach(ref -> {
+                try {
+                    if (ref.getName().contains("TomasHofman/")) {
+                        assertThat(git.branchDelete().setBranchNames(ref.getName()).setForce(true).call());
                     }
-                });
+                } catch (GitAPIException e) {
+                    e.printStackTrace();
+                }
+            });
 
         }
     }

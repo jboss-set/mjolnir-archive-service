@@ -7,6 +7,7 @@ import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.transport.CredentialsProvider;
 import org.eclipse.jgit.transport.TagOpt;
 import org.eclipse.jgit.transport.URIish;
+import org.jboss.logging.Logger;
 
 import java.io.File;
 import java.io.IOException;
@@ -17,6 +18,8 @@ import java.util.List;
  * Defines basic operations for fetching remote repositories.
  */
 public class GitArchiveRepository {
+
+    private final Logger logger = Logger.getLogger(getClass());
 
     private Git git;
 
@@ -69,10 +72,12 @@ public class GitArchiveRepository {
         List<Ref> refs = git.branchList()
                 .setListMode(ListBranchCommand.ListMode.REMOTE)
                 .call();
-        for (Ref ref: refs) {
-            if (ref.getName().startsWith("ref/remote/" + remoteName + "/")) {
+        for (Ref ref : refs) {
+            if (ref.getName().startsWith("refs/remotes/" + remoteName + "/")) {
+                logger.infof("Removing branch %s in repo %s", ref.getName(),
+                        git.getRepository().getDirectory().getAbsolutePath());
                 git.branchDelete().setBranchNames(ref.getName()).setForce(true).call();
             }
         }
     }
- }
+}

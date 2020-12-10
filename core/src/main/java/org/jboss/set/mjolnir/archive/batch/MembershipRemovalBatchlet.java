@@ -4,16 +4,17 @@ import org.apache.commons.lang3.StringUtils;
 import org.eclipse.egit.github.core.Repository;
 import org.jboss.logging.Logger;
 import org.jboss.set.mjolnir.archive.ArchivingBean;
+import org.jboss.set.mjolnir.archive.configuration.Configuration;
+import org.jboss.set.mjolnir.archive.domain.GitHubOrganization;
 import org.jboss.set.mjolnir.archive.domain.GitHubTeam;
+import org.jboss.set.mjolnir.archive.domain.RegisteredUser;
+import org.jboss.set.mjolnir.archive.domain.RemovalStatus;
+import org.jboss.set.mjolnir.archive.domain.RepositoryFork;
+import org.jboss.set.mjolnir.archive.domain.RepositoryForkStatus;
+import org.jboss.set.mjolnir.archive.domain.UserRemoval;
 import org.jboss.set.mjolnir.archive.domain.repositories.RemovalLogRepositoryBean;
 import org.jboss.set.mjolnir.archive.github.GitHubDiscoveryBean;
 import org.jboss.set.mjolnir.archive.github.GitHubTeamServiceBean;
-import org.jboss.set.mjolnir.archive.configuration.Configuration;
-import org.jboss.set.mjolnir.archive.domain.GitHubOrganization;
-import org.jboss.set.mjolnir.archive.domain.RemovalStatus;
-import org.jboss.set.mjolnir.archive.domain.RepositoryFork;
-import org.jboss.set.mjolnir.archive.domain.RegisteredUser;
-import org.jboss.set.mjolnir.archive.domain.UserRemoval;
 
 import javax.batch.api.AbstractBatchlet;
 import javax.inject.Inject;
@@ -85,9 +86,9 @@ public class MembershipRemovalBatchlet extends AbstractBatchlet {
         transaction.commit();
 
         if (successful) {
-            return "DONE";
+            return Constants.DONE;
         } else {
-            return "DONE_WITH_ERRORS";
+            return Constants.DONE_WITH_ERRORS;
         }
     }
 
@@ -204,8 +205,14 @@ public class MembershipRemovalBatchlet extends AbstractBatchlet {
                 logger.infof("Archiving repository %s", repository.generateId());
                 try {
                     archivingBean.createRepositoryMirror(repository);
+
+                    repositoryFork.setStatus(RepositoryForkStatus.ARCHIVED);
+                    em.persist(repositoryFork);
                 } catch (Exception e) {
                     logRepositoryBean.logError(removal, "Couldn't archive repository: " + repository.getCloneUrl(), e);
+
+                    repositoryFork.setStatus(RepositoryForkStatus.ARCHIVAL_FAILED);
+                    em.persist(repositoryFork);
 
                     removal.setStatus(RemovalStatus.FAILED);
                     em.persist(removal);

@@ -1,5 +1,5 @@
 <job id="archiveRemovalJob">
     <step id="step">
-        <batchlet ref="removeArchieveUserBatchlet"/>
+        <batchlet ref="removeOldArchivesBatchlet"/>
     </step>
 </job>

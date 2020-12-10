@@ -17,7 +17,7 @@ public class Configuration {
     private boolean unsubscribeUsers = false;
     private boolean removeUsersWithoutLdapAccount = false;
     private boolean removeArchives = false;
-    private Integer removeArchivesAfter;
+    private int removeArchivesAfter = 90;
 
     public Configuration() {
     }
@@ -64,7 +64,7 @@ public class Configuration {
         return removeArchives;
     }
 
-    public Integer getRemoveArchivesAfter() {
+    public int getRemoveArchivesAfter() {
         return removeArchivesAfter;
     }
 
@@ -126,13 +126,13 @@ public class Configuration {
             return this;
         }
 
-        public ConfigurationBuilder setRemoveArchives(boolean context) {
-            this.configuration.removeArchives = context;
+        public ConfigurationBuilder setRemoveArchives(boolean removeArchives) {
+            this.configuration.removeArchives = removeArchives;
             return this;
         }
 
-        public ConfigurationBuilder setRemoveArchivesAfter(Integer context) {
-            this.configuration.removeArchivesAfter = context;
+        public ConfigurationBuilder setRemoveArchivesAfter(int days) {
+            this.configuration.removeArchivesAfter = days;
             return this;
         }
 

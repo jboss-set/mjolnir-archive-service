@@ -18,8 +18,8 @@ import java.util.Properties;
 /**
  * Triggers a batch job that archives repositories of boarder users and removes their GH team memberships after 90 days.
  */
-@WebServlet("/remove-archive-users")
-public class RemoveBatchServlet extends HttpServlet {
+@WebServlet("/delete-old-archives")
+public class DeleteArchivesServlet extends HttpServlet {
     private Logger logger = Logger.getLogger(getClass());
 
     @Override
@@ -28,7 +28,7 @@ public class RemoveBatchServlet extends HttpServlet {
 
         JobOperator jobOperator = BatchRuntime.getJobOperator();
         try {
-            List<Long> runningExecutions = jobOperator.getRunningExecutions(Constants.ARCHIVAL_BATCH_JOB_NAME);
+            List<Long> runningExecutions = jobOperator.getRunningExecutions(Constants.DELETE_ARCHIVES_JOB_NAME);
 
             if (runningExecutions.size() > 0) {
                 resp.getOutputStream().println("Job already running.");
@@ -39,7 +39,7 @@ public class RemoveBatchServlet extends HttpServlet {
             // pass
         }
 
-        long executionId = jobOperator.start(Constants.ARCHIVAL_BATCH_JOB_NAME, new Properties());
+        long executionId = jobOperator.start(Constants.DELETE_ARCHIVES_JOB_NAME, new Properties());
         logger.infof("Started job ID %d", executionId);
         resp.getOutputStream().println("Started execution ID: " + executionId);
     }

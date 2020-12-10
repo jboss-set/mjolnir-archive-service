@@ -29,7 +29,7 @@ public class StartBatchServlet extends HttpServlet {
 
         JobOperator jobOperator = BatchRuntime.getJobOperator();
         try {
-            List<Long> runningExecutions = jobOperator.getRunningExecutions(Constants.BATCH_JOB_NAME);
+            List<Long> runningExecutions = jobOperator.getRunningExecutions(Constants.REMOVE_MEMBERSHIP_JOB_NAME);
 
             if (runningExecutions.size() > 0) {
                 resp.getOutputStream().println("Job already running.");
@@ -40,7 +40,7 @@ public class StartBatchServlet extends HttpServlet {
             // pass
         }
 
-        long executionId = jobOperator.start(Constants.BATCH_JOB_NAME, new Properties());
+        long executionId = jobOperator.start(Constants.REMOVE_MEMBERSHIP_JOB_NAME, new Properties());
         logger.infof("Started job ID %d", executionId);
         resp.getOutputStream().println("Started execution ID: " + executionId);
     }

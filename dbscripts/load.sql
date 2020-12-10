@@ -10,7 +10,7 @@ insert into application_parameters (param_name, param_value) values ('applicatio
 insert into application_parameters (param_name, param_value) values ('application.archive_root', '/tmp/mjolnir-repository-archive');
 insert into application_parameters (param_name, param_value) values ('ldap.url', 'ldap://ldap.example.com');
 insert into application_parameters (param_name, param_value) values ('ldap.search_context', 'ou=users,dc=example,dc=com');
+insert into application_parameters (param_name, param_value) values ('application.remove_archives', 'false');
+insert into application_parameters (param_name, param_value) values ('application.remove_archives_after', '90');
 
 insert into users (krb_name, github_name) values ('thofman', 'TomasHofman');
-insert into APPLICATION_PARAMETERS (PARAM_NAME,PARAM_VALUE) values ('application.remove_archives', 'false');
-insert into APPLICATION_PARAMETERS (PARAM_NAME,PARAM_VALUE) values ('application.remove_archives_after', '90');
