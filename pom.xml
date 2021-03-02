@@ -190,7 +190,6 @@
                 <version>${version.deltaspike}</version>
                 <scope>test</scope>
             </dependency>
-
         </dependencies>
     </dependencyManagement>
 

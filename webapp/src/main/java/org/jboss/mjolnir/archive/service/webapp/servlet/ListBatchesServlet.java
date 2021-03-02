@@ -31,7 +31,7 @@ public class ListBatchesServlet extends HttpServlet {
 
         JobOperator jobOperator = BatchRuntime.getJobOperator();
         try {
-            for (JobInstance jobInstance : jobOperator.getJobInstances(Constants.BATCH_JOB_NAME, 1, 40)) {
+            for (JobInstance jobInstance : jobOperator.getJobInstances(Constants.REMOVE_MEMBERSHIP_JOB_NAME, 1, 40)) {
                 os.println("JobInstance: " + jobInstance.getJobName() + " " + jobInstance.getInstanceId());
                 for (JobExecution jobExecution : jobOperator.getJobExecutions(jobInstance)) {
                     os.println("JobExecution: " + jobExecution.getJobName()

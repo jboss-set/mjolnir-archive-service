@@ -25,7 +25,7 @@ public final class TestUtils {
 
     /**
      * Prepares GitHub API stubs.
-     *
+     * <p>
      * The test case need to contain @Rule annotated WireMockRule field.
      */
     public static void setupGitHubApiStubs() throws IOException, URISyntaxException {

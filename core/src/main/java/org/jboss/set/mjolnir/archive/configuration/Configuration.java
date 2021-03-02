@@ -16,6 +16,8 @@ public class Configuration {
     private String ldapSearchContext;
     private boolean unsubscribeUsers = false;
     private boolean removeUsersWithoutLdapAccount = false;
+    private boolean removeArchives = false;
+    private int removeArchivesAfter = 90;
 
     public Configuration() {
     }
@@ -56,6 +58,14 @@ public class Configuration {
 
     public String getLdapSearchContext() {
         return ldapSearchContext;
+    }
+
+    public boolean getRemoveArchives() {
+        return removeArchives;
+    }
+
+    public int getRemoveArchivesAfter() {
+        return removeArchivesAfter;
     }
 
     /**
@@ -113,6 +123,16 @@ public class Configuration {
 
         public ConfigurationBuilder setLdapSearchContext(String context) {
             this.configuration.ldapSearchContext = context;
+            return this;
+        }
+
+        public ConfigurationBuilder setRemoveArchives(boolean removeArchives) {
+            this.configuration.removeArchives = removeArchives;
+            return this;
+        }
+
+        public ConfigurationBuilder setRemoveArchivesAfter(int days) {
+            this.configuration.removeArchivesAfter = days;
             return this;
         }
 

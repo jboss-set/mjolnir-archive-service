@@ -1,6 +1,6 @@
 package org.jboss.set.mjolnir.archive.mail.report;
 
-public final class Constants {
+final class Constants {
 
     public static final String LDAP_NAME = "LDAP Name";
     public static final String GH_NAME = "GH Name";

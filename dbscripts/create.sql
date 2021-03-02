@@ -17,10 +17,12 @@ create table repository_forks (
     id bigint default nextval('sq_repository_forks') primary key,
     user_removal_id bigint not null,
     created timestamp,
+    deleted timestamp,
     repository_name varchar(255),
     repository_url varchar(255),
     source_repository_name varchar(255),
-    source_repository_url varchar(255)
+    source_repository_url varchar(255),
+    status varchar(255)
 );
 
 alter table repository_forks add constraint fk_repository_forks_user_removal_id foreign key (user_removal_id) references user_removals;
