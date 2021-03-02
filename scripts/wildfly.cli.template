@@ -1,0 +1,46 @@
+# datasource
+data-source add --name=MjolnirDS \
+    --jndi-name=java:jboss/datasources/mjolnir/MjolnirDS \
+    --connection-url=jdbc:h2:tcp://localhost/~/mjolnir-db \
+    --driver-name=h2 \
+    --user-name=sa
+
+# add system properties
+/system-property=UMBServerUrl:add(value="failover:(ssl://broker01.example.com:61616)?jms.rmIdFromConnectionId=true&maxReconnectAttempts=0&reconnectSupported=false&updateURIsSupported=false&priorityBackup=false")
+/system-property=UMBQueueName:add(value="Consumer.nonprod-mjolnir.employees-events.VirtualTopic.services.enterprise-iam.integration.event")
+/system-property=UMBKeyStore:add(value="/path/to/keystore.jks")
+/system-property=UMBKeyStorePassword:add(value="secret")
+/system-property=UMBTrustStore:add(value="/path/to/truststore.jks")
+/system-property=UMBTrustStorePassword:add(value="secret")
+/system-property=SMTPServer:add(value="smtp.example.com")
+
+# deploy resource adapter
+deploy ~/Downloads/activemq-rar-5.11.0.redhat-630495.rar --name=activemq-rar.rar
+
+# add an activemq-rar.rar resource adapter
+/subsystem=resource-adapters/resource-adapter=activemq-rar.rar:add(archive=activemq-rar.rar, transaction-support=XATransaction)
+# ssl configuration for inflow connections
+/subsystem=resource-adapters/resource-adapter=activemq-rar.rar/config-properties=ServerUrl:add(value="${UMBServerUrl}")
+/subsystem=resource-adapters/resource-adapter=activemq-rar.rar/config-properties=KeyStore:add(value="${UMBKeyStore}")
+/subsystem=resource-adapters/resource-adapter=activemq-rar.rar/config-properties=KeyStorePassword:add(value="${UMBKeyStorePassword}")
+/subsystem=resource-adapters/resource-adapter=activemq-rar.rar/config-properties=TrustStore:add(value="${UMBTrustStore}")
+/subsystem=resource-adapters/resource-adapter=activemq-rar.rar/config-properties=TrustStorePassword:add(value="${UMBTrustStorePassword}")
+# the following configuration property is necessary for activemq failover
+/subsystem=resource-adapters/resource-adapter=activemq-rar.rar/config-properties=UseInboundSession:add(value=true)
+# add a connection definition
+/subsystem=resource-adapters/resource-adapter=activemq-rar.rar/connection-definitions=AMQConnectionFactory:add(class-name=org.apache.activemq.ra.ActiveMQManagedConnectionFactory, jndi-name="java:/AMQConnectionFactory", enabled=true, tracking=false, no-recovery, min-pool-size=1, max-pool-size=20, pool-prefill=false, same-rm-override=false){allow-resource-service-restart=true}
+/subsystem=resource-adapters/resource-adapter=activemq-rar.rar/connection-definitions=AMQConnectionFactory/config-properties=KeyStore:add(value="${UMBKeyStore}")
+/subsystem=resource-adapters/resource-adapter=activemq-rar.rar/connection-definitions=AMQConnectionFactory/config-properties=KeyStorePassword:add(value="${UMBKeyStorePassword}")
+/subsystem=resource-adapters/resource-adapter=activemq-rar.rar/connection-definitions=AMQConnectionFactory/config-properties=TrustStore:add(value="${UMBTrustStore}")
+/subsystem=resource-adapters/resource-adapter=activemq-rar.rar/connection-definitions=AMQConnectionFactory/config-properties=TrustStorePassword:add(value="${UMBTrustStorePassword}")
+# the following configuration property is necessary for activemq failover
+/subsystem=resource-adapters/resource-adapter=activemq-rar.rar/connection-definitions=AMQConnectionFactory/config-properties=UseInboundSession:add(value=true)
+# add an admin object for the UMB queue
+/subsystem=resource-adapters/resource-adapter=activemq-rar.rar/admin-objects=EmployeeEventsQueue:add(class-name=org.apache.activemq.command.ActiveMQQueue, jndi-name="java:/queue/EmployeeEventsQueue", use-java-context=true)
+/subsystem=resource-adapters/resource-adapter=activemq-rar.rar/admin-objects=EmployeeEventsQueue/config-properties=PhysicalName:add(value="${UMBQueueName}")
+
+# activate the resource adapter
+/subsystem=resource-adapters/resource-adapter=activemq-rar.rar:activate
+
+# smtp server
+/socket-binding-group=standard-sockets/remote-destination-outbound-socket-binding=mail-smtp:write-attribute(name=host, value=${SMTPServer})

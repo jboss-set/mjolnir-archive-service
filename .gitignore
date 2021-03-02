@@ -2,3 +2,5 @@
 .idea
 target/
 
+/scripts/wildfly.cli
+/db/
