@@ -1,5 +1,6 @@
 package org.jboss.set.mjolnir.archive.domain;
 
+import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
@@ -31,14 +32,23 @@ public class GitHubOrganization {
 
     private String name;
 
+    @Column(name = "unsubscribe_users_from_org")
+    private boolean unsubscribeUsersFromOrg;
+
     @OneToMany
     @JoinColumn(name="org_id")
     private List<GitHubTeam> teams;
 
+    /**
+     * @return Entity ID
+     */
     public long getId() {
         return id;
     }
 
+    /**
+     * @return GH organization name
+     */
     public String getName() {
         return name;
     }
@@ -47,11 +57,27 @@ public class GitHubOrganization {
         this.name = name;
     }
 
+    /**
+     * @return GH teams belonging to the organization
+     */
     public List<GitHubTeam> getTeams() {
         return teams;
     }
 
     public void setTeams(List<GitHubTeam> teams) {
         this.teams = teams;
+    }
+
+    /**
+     * Should we unsubscribe users from the organization, as well as from the organization teams?
+     *
+     * @return true - users are unsubscribed from teams and from org, false - users are only unsubscribed from teams
+     */
+    public boolean isUnsubscribeUsersFromOrg() {
+        return unsubscribeUsersFromOrg;
+    }
+
+    public void setUnsubscribeUsersFromOrg(boolean unsubscribeUsersFromOrg) {
+        this.unsubscribeUsersFromOrg = unsubscribeUsersFromOrg;
     }
 }

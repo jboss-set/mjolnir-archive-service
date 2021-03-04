@@ -23,6 +23,9 @@ import static j2html.TagCreator.th;
 import static j2html.TagCreator.tr;
 import static j2html.TagCreator.ul;
 
+/**
+ * Prints a list of GH users who are members of monitored GH teams, but are not registered in the Mjolnir database.
+ */
 public class UnregisteredMembersReportTable implements ReportTable {
 
     @Inject
@@ -32,7 +35,8 @@ public class UnregisteredMembersReportTable implements ReportTable {
     public String composeTable() throws IOException {
         String html = div().with(
                 h2("Unknown GH Teams Members").withStyle(Styles.H2_STYLE),
-                p("These users are members of GitHub teams, but are not registered in our database.")
+                p("These users are members of GitHub teams, but are not registered in our database. " +
+                        "This table should remain empty.")
                         .withStyle(Styles.SUB_HEADING_STYLE),
                 table().withStyle(Styles.TABLE_STYLE + Styles.TD_STYLE).with(
                         tr().with(

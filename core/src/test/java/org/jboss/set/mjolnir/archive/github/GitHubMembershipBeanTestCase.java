@@ -28,7 +28,7 @@ import static org.jboss.set.mjolnir.archive.util.TestUtils.readSampleResponse;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-public class GitHubTeamServiceBeanTestCase {
+public class GitHubMembershipBeanTestCase {
 
     @Rule
     public WireMockRule wireMockRule = new WireMockRule(8089);
@@ -76,6 +76,17 @@ public class GitHubTeamServiceBeanTestCase {
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")
                         .withBody(readSampleResponse("responses/empty-list-response.json"))));
+
+        stubFor(get(urlPathEqualTo("/api/v3/orgs/testorg/members/thofman"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody(readSampleResponse("responses/empty-list-response.json"))));
+
+        stubFor(delete(urlPathEqualTo("/api/v3/orgs/testorg/members/thofman"))
+                .willReturn(aResponse()
+                        .withStatus(204)));
+
     }
 
     @Test
@@ -94,12 +105,11 @@ public class GitHubTeamServiceBeanTestCase {
                 .containsOnly("ben");
         assertThat(teamService.getMembers("testorg", 3))
                 .isEmpty();
-
     }
 
     @Test
     public void testRemoveUsersFromTeam() throws Exception {
-        GitHubTeamServiceBean bean = new GitHubTeamServiceBean(client);
+        GitHubMembershipBean bean = new GitHubMembershipBean(client);
 
         bean.removeUserFromTeams(createOrganizationEntity(), "lvydra");
 
@@ -109,8 +119,17 @@ public class GitHubTeamServiceBeanTestCase {
     }
 
     @Test
+    public void testRemoveUsersFromOrganization() throws Exception {
+        GitHubMembershipBean bean = new GitHubMembershipBean(client);
+
+        bean.removeUserFromOrganization(createOrganizationEntity(), "thofman");
+
+        verify(deleteRequestedFor(urlEqualTo("/api/v3/orgs/testorg/members/thofman")));
+    }
+
+    @Test
     public void testGetAllTeamsMembers() throws Exception {
-        GitHubTeamServiceBean bean = new GitHubTeamServiceBean(client);
+        GitHubMembershipBean bean = new GitHubMembershipBean(client);
 
         Set<User> members = bean.getAllTeamsMembers(createOrganizationEntity());
         assertThat(members).extracting("login")

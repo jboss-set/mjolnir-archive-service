@@ -12,6 +12,9 @@ import java.util.List;
 import static j2html.TagCreator.*;
 import static j2html.TagCreator.th;
 
+/**
+ * Prints a list of removals performed durting the last week.
+ */
 public class RemovalsReportTable implements ReportTable {
 
     @Inject

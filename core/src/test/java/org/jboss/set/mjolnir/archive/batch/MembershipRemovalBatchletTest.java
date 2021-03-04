@@ -1,5 +1,6 @@
 package org.jboss.set.mjolnir.archive.batch;
 
+import com.github.tomakehurst.wiremock.client.WireMock;
 import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import org.apache.deltaspike.testcontrol.api.junit.CdiTestRunner;
 import org.assertj.core.groups.Tuple;
@@ -14,6 +15,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Mockito;
 
 import javax.inject.Inject;
 import javax.persistence.EntityManager;
@@ -21,6 +23,9 @@ import javax.persistence.TypedQuery;
 import java.sql.Date;
 import java.util.List;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.deleteRequestedFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -38,13 +43,19 @@ public class MembershipRemovalBatchletTest {
     private MembershipRemovalBatchlet batchlet;
 
     @Inject
-    private ArchivingBean archivingBean;
+    private ArchivingBean archivingBeanMock;
 
     @Before
     public void setup() {
-        // create two sample removals
+        Mockito.reset(archivingBeanMock);
+
+        // create sample removals
 
         em.getTransaction().begin();
+
+        em.createNativeQuery("delete from repository_forks").executeUpdate();
+        em.createNativeQuery("delete from user_removals").executeUpdate();
+        em.clear();
 
         UserRemoval userRemoval = new UserRemoval();
         userRemoval.setLdapUsername("thofman");
@@ -92,6 +103,7 @@ public class MembershipRemovalBatchletTest {
         List<GitHubOrganization> orgs = batchlet.loadOrganizations();
         assertThat(orgs.size()).isEqualTo(1);
         assertThat(orgs.get(0).getName()).isEqualTo("testorg");
+        assertThat(orgs.get(0).isUnsubscribeUsersFromOrg()).isEqualTo(false);
         assertThat(orgs.get(0).getTeams())
                 .extracting("name")
                 .containsOnly("Team 1", "Team 2", "Team 3");
@@ -105,6 +117,21 @@ public class MembershipRemovalBatchletTest {
 
     @Test
     public void testBatchlet() throws Exception {
+        verifyBatchletProcessing(false);
+    }
+
+    @Test
+    public void testBatchlet_removeFromOrg() throws Exception {
+        em.getTransaction().begin();
+        GitHubOrganization org = em.find(GitHubOrganization.class, 1L);
+        org.setUnsubscribeUsersFromOrg(true);
+        em.persist(org);
+        em.getTransaction().commit();
+
+        verifyBatchletProcessing(true);
+    }
+
+    private void verifyBatchletProcessing(boolean removeFromOrg) throws Exception {
         TestUtils.setupGitHubApiStubs();
 
         String result = batchlet.process();
@@ -163,14 +190,30 @@ public class MembershipRemovalBatchletTest {
 
         // verify that repositories were archived (ArchivingBean is mocked)
         ArgumentCaptor<Repository> repositoryArgumentCaptor = ArgumentCaptor.forClass(Repository.class);
-        verify(archivingBean, times(2))
+        verify(archivingBeanMock, times(2))
                 .createRepositoryMirror(repositoryArgumentCaptor.capture());
         assertThat(repositoryArgumentCaptor.getAllValues())
                 .extracting("cloneUrl")
                 .containsOnly("https://github.com/TomasHofman/aphrodite.git",
                         "https://github.com/TomasHofman/activemq-artemis.git");
 
-        // TODO: verify that user was removed from GitHub organization teams
+        // verify that user was removed from GitHub teams
+        WireMock.verify(getRequestedFor(urlEqualTo("/api/v3/teams/1/members/TomasHofman")));
+        WireMock.verify(getRequestedFor(urlEqualTo("/api/v3/teams/2/members/TomasHofman")));
+        WireMock.verify(getRequestedFor(urlEqualTo("/api/v3/teams/3/members/TomasHofman")));
+        WireMock.verify(deleteRequestedFor(urlEqualTo("/api/v3/teams/1/members/TomasHofman")));
+        WireMock.verify(0, deleteRequestedFor(urlEqualTo("/api/v3/teams/2/members/TomasHofman")));
+        WireMock.verify(0, deleteRequestedFor(urlEqualTo("/api/v3/teams/3/members/TomasHofman")));
+
+        if (removeFromOrg) {
+            // verify that user was removed from GitHub organization
+            WireMock.verify(getRequestedFor(urlEqualTo("/api/v3/orgs/testorg/members/TomasHofman")));
+            WireMock.verify(deleteRequestedFor(urlEqualTo("/api/v3/orgs/testorg/members/TomasHofman")));
+        } else {
+            // verify that user was not removed from GitHub organization
+            WireMock.verify(0, getRequestedFor(urlEqualTo("/api/v3/orgs/testorg/members/TomasHofman")));
+            WireMock.verify(0, deleteRequestedFor(urlEqualTo("/api/v3/orgs/testorg/members/TomasHofman")));
+        }
     }
 
 }

@@ -17,6 +17,10 @@ import static j2html.TagCreator.td;
 import static j2html.TagCreator.th;
 import static j2html.TagCreator.tr;
 
+/**
+ * Prints a list GH users who are members of monitored GH teams, are registered in the Mjolnir database, but their
+ * LDAP accounts are not active (i.e. probably left the company).
+ */
 public class UsersWithoutLdapReportTable implements ReportTable {
 
     private static final String REPORT_TABLE_TITLE = "Users without an LDAP Account";
@@ -28,26 +32,25 @@ public class UsersWithoutLdapReportTable implements ReportTable {
     public String composeTable() throws NamingException, IOException {
         String html = div().with(
                 h2(REPORT_TABLE_TITLE).withStyle(Styles.H2_STYLE),
-                p("These users were registered in Mjolnir, but their LDAP accounts have been removed.")
+                p("These users were registered in Mjolnir, but their LDAP accounts have been removed. " +
+                        "This table should remain empty.")
                         .withStyle(Styles.SUB_HEADING_STYLE),
                 table().withStyle(Styles.TABLE_STYLE + Styles.TD_STYLE).with(
                         tr().with(
                                 th(Constants.LDAP_NAME).withStyle(Styles.TH_STYLE)
                         ),
-                        addUserWithoutLdapRows(getUsersWithoutLdap())
+                        addUserWithoutLdapRows()
                 ))
                 .render();
         return html;
     }
 
-    private DomContent addUserWithoutLdapRows(List<String> usersWithoutLdap) {
+    private DomContent addUserWithoutLdapRows() throws IOException, NamingException {
+        List<String> usersWithoutLdap = ldapScanningBean.getTeamMembersWithoutLdapAccount();
         usersWithoutLdap.sort(String::compareToIgnoreCase);
         return each(usersWithoutLdap, user -> tr(
                 td(user).withStyle(Styles.TD_STYLE)
         ));
     }
 
-    private List<String> getUsersWithoutLdap() throws NamingException, IOException {
-        return  ldapScanningBean.getUsersWithoutLdapAccount();
-    }
 }

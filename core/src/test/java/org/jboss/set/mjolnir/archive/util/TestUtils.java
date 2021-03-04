@@ -13,6 +13,7 @@ import java.nio.file.Paths;
 import java.sql.Timestamp;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.delete;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
@@ -29,23 +30,61 @@ public final class TestUtils {
      * The test case need to contain @Rule annotated WireMockRule field.
      */
     public static void setupGitHubApiStubs() throws IOException, URISyntaxException {
+        // query list of repositories in the organization
         stubFor(get(urlPathEqualTo("/api/v3/orgs/testorg/repos"))
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")
                         .withBody(readSampleResponse("responses/gh-orgs-repos-response.json"))));
 
+        // query list of forks for the repository
         stubFor(get(urlPathMatching("/api/v3/repos/testorg/aphrodite/forks"))
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")
                         .withBody(readSampleResponse("responses/gh-repos-forks-aphrodite-response.json"))));
 
+        // query list of forks for the repository
         stubFor(get(urlPathMatching("/api/v3/repos/testorg/activemq-artemis/forks"))
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")
                         .withBody(readSampleResponse("responses/gh-repos-forks-artemis-response.json"))));
+
+        // query membership of all users in all teams
+        stubFor(get(urlPathMatching("/api/v3/teams/([0-9]+)/members/([a-zA-Z]+)"))
+                .willReturn(aResponse()
+                        .withStatus(404)
+                        .withBody(readSampleResponse("responses/gh-orgs-members-not-found-response.json"))));
+
+        // query membership of a specific user in a specific team
+        stubFor(get(urlPathEqualTo("/api/v3/teams/1/members/TomasHofman"))
+                .willReturn(aResponse()
+                        .withStatus(204)));
+
+        // delete membership of a user from team #1
+        stubFor(delete(urlPathEqualTo("/api/v3/teams/1/members/TomasHofman"))
+                .willReturn(aResponse()
+                        .withStatus(204)));
+
+        // query membership of all users in the organization
+        stubFor(get(urlPathMatching("/api/v3/orgs/testorg/members/([a-zA-Z]+)"))
+                .willReturn(aResponse()
+                        .withStatus(404)
+                        .withBody(readSampleResponse("responses/gh-orgs-members-not-found-response.json"))));
+
+        // query membership of a specific user in the organization
+        stubFor(get(urlPathEqualTo("/api/v3/orgs/testorg/members/TomasHofman"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody(readSampleResponse("responses/empty-list-response.json"))));
+
+        // delete membership of a user from the organization
+        stubFor(delete(urlPathEqualTo("/api/v3/orgs/testorg/members/TomasHofman"))
+                .willReturn(aResponse()
+                        .withStatus(204)));
+
     }
 
     public static String readSampleResponse(String responseFileName) throws URISyntaxException, IOException {

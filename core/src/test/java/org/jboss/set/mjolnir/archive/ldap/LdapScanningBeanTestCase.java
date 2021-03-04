@@ -138,7 +138,7 @@ public class LdapScanningBeanTestCase {
 
     @Test
     public void testAllOrganizationMembers() throws IOException {
-        Set<String> members = ldapScanningBean.getAllOrganizationsMembers();
+        Set<String> members = ldapScanningBean.getAllTeamsMembers();
         assertThat(members).containsOnly("bob", "ben");
     }
 

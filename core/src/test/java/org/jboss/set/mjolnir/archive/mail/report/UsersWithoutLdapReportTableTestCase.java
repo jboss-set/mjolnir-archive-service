@@ -93,7 +93,7 @@ public class UsersWithoutLdapReportTableTestCase {
 
     @Test
     public void testComposeTableBody() throws IOException, NamingException {
-        List<String> users = ldapScanningBean.getUsersWithoutLdapAccount();
+        List<String> users = ldapScanningBean.getTeamMembersWithoutLdapAccount();
         assertThat(users).containsOnly("ben", "bob");
 
         List<String> usersList = new ArrayList<>(users);

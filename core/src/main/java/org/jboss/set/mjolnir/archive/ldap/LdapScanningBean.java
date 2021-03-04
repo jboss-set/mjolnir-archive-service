@@ -9,7 +9,7 @@ import org.jboss.set.mjolnir.archive.domain.RegisteredUser;
 import org.jboss.set.mjolnir.archive.domain.RemovalLog;
 import org.jboss.set.mjolnir.archive.domain.UserRemoval;
 import org.jboss.set.mjolnir.archive.domain.repositories.RegisteredUserRepositoryBean;
-import org.jboss.set.mjolnir.archive.github.GitHubTeamServiceBean;
+import org.jboss.set.mjolnir.archive.github.GitHubMembershipBean;
 
 import javax.inject.Inject;
 import javax.naming.NamingException;
@@ -43,7 +43,7 @@ public class LdapScanningBean {
     private LdapDiscoveryBean ldapDiscoveryBean;
 
     @Inject
-    private GitHubTeamServiceBean teamServiceBean;
+    private GitHubMembershipBean gitHubMembershipBean;
 
     @Inject
     private RegisteredUserRepositoryBean userRepositoryBean;
@@ -70,15 +70,15 @@ public class LdapScanningBean {
         logger.infof("Starting job to create user removals");
 
         // get users without ldap account
-        Collection<String> usersWithoutLdapAccount = getUsersWithoutLdapAccount();
+        Collection<String> usersWithoutLdapAccount = getTeamMembersWithoutLdapAccount();
 
         // create removal records
         createUserRemovals(usersWithoutLdapAccount);
     }
 
-    public List<String> getUsersWithoutLdapAccount() throws IOException, NamingException {
+    public List<String> getTeamMembersWithoutLdapAccount() throws IOException, NamingException {
         // collect members of all teams
-        Set<String> allMembers = getAllOrganizationsMembers();
+        Set<String> allMembers = getAllTeamsMembers();
         logger.infof("Found %d members of all organizations teams.", allMembers.size());
 
         // retrieve kerberos names of collected users (those that we know and are not whitelisted)
@@ -113,15 +113,15 @@ public class LdapScanningBean {
     }
 
     /**
-     * Collects members of all teams of all registered GitHub organizations.
+     * Collects members of all monitored GH teams.
      */
-    Set<String> getAllOrganizationsMembers() throws IOException {
+    Set<String> getAllTeamsMembers() throws IOException {
         List<GitHubOrganization> organizations =
                 em.createNamedQuery(GitHubOrganization.FIND_ALL, GitHubOrganization.class).getResultList();
 
         HashSet<User> users = new HashSet<>();
         for (GitHubOrganization organization : organizations) {
-            users.addAll(teamServiceBean.getAllTeamsMembers(organization));
+            users.addAll(gitHubMembershipBean.getAllTeamsMembers(organization));
         }
 
         return users.stream()
@@ -130,7 +130,7 @@ public class LdapScanningBean {
     }
 
     public Set<String> getUnregisteredOrganizationMembers() throws IOException {
-        Set<String> allMembers = getAllOrganizationsMembers();
+        Set<String> allMembers = getAllTeamsMembers();
         List<RegisteredUser> registeredUsers = em.createNamedQuery(RegisteredUser.FIND_ALL, RegisteredUser.class).getResultList();
 
         Set<String> unregisteredMembers = allMembers.stream()
@@ -152,7 +152,7 @@ public class LdapScanningBean {
         }
 
         for (GitHubTeam team : allTeams) {
-            if (teamServiceBean.isMember(gitHubUser, team))
+            if (gitHubMembershipBean.isMember(gitHubUser, team))
                 memberTeams.add(team);
         }
 
