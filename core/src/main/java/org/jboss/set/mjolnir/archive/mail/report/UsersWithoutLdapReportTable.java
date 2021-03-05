@@ -1,9 +1,9 @@
 package org.jboss.set.mjolnir.archive.mail.report;
 
 import j2html.tags.DomContent;
+import org.jboss.set.mjolnir.archive.UserDiscoveryBean;
 import org.jboss.set.mjolnir.archive.domain.GitHubOrganization;
 import org.jboss.set.mjolnir.archive.domain.GitHubTeam;
-import org.jboss.set.mjolnir.archive.ldap.LdapScanningBean;
 
 import javax.inject.Inject;
 import javax.naming.NamingException;
@@ -33,7 +33,7 @@ public class UsersWithoutLdapReportTable implements ReportTable {
     private static final String REPORT_TABLE_TITLE = "Users without an LDAP Account";
 
     @Inject
-    private LdapScanningBean ldapScanningBean;
+    private UserDiscoveryBean userDiscoveryBean;
 
     @Override
     public String composeTable() throws NamingException, IOException {
@@ -57,7 +57,7 @@ public class UsersWithoutLdapReportTable implements ReportTable {
     private DomContent addOrganizationsMembersRows() throws IOException, NamingException {
         // produce sorted entry lists
         List<Map.Entry<String, List<GitHubOrganization>>> organizationsMembers =
-                ldapScanningBean.findOrganizationsMembersWithoutLdapAccount().entrySet().stream()
+                userDiscoveryBean.findOrganizationsMembersWithoutLdapAccount().entrySet().stream()
                         .sorted(Map.Entry.comparingByKey())
                         .collect(Collectors.toList());
 
@@ -72,7 +72,7 @@ public class UsersWithoutLdapReportTable implements ReportTable {
     private DomContent addTeamsMembersRows() throws IOException, NamingException {
         // produce sorted entry list
         List<Map.Entry<String, List<GitHubTeam>>> teamsMembers =
-                ldapScanningBean.findTeamsMembersWithoutLdapAccount().entrySet().stream()
+                userDiscoveryBean.findTeamsMembersWithoutLdapAccount().entrySet().stream()
                         .sorted(Map.Entry.comparingByKey())
                         .collect(Collectors.toList());
 

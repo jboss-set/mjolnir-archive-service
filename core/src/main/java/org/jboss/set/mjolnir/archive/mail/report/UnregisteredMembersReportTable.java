@@ -1,7 +1,7 @@
 package org.jboss.set.mjolnir.archive.mail.report;
 
 import j2html.tags.DomContent;
-import org.jboss.set.mjolnir.archive.ldap.LdapScanningBean;
+import org.jboss.set.mjolnir.archive.UserDiscoveryBean;
 
 import javax.inject.Inject;
 import java.io.IOException;
@@ -24,7 +24,7 @@ import static j2html.TagCreator.ul;
 public class UnregisteredMembersReportTable implements ReportTable {
 
     @Inject
-    private LdapScanningBean ldapScanningBean;
+    private UserDiscoveryBean userDiscoveryBean;
 
     @Override
     public String composeTable() throws IOException {
@@ -46,7 +46,7 @@ public class UnregisteredMembersReportTable implements ReportTable {
     }
 
     private DomContent addUnregisteredOrganizationMembersRows() throws IOException {
-        return each(ldapScanningBean.findUnregisteredOrganizationsMembers(), entry -> tr(
+        return each(userDiscoveryBean.findUnregisteredOrganizationsMembers(), entry -> tr(
                 td(entry.getKey()).withStyle(Styles.TD_STYLE),
                 td(ul().withStyle(Styles.UL_STYLE)
                         .with(each(entry.getValue(),
@@ -56,7 +56,7 @@ public class UnregisteredMembersReportTable implements ReportTable {
     }
 
     private DomContent addUnregisteredTeamMembersRows() throws IOException {
-        return each(ldapScanningBean.findUnregisteredTeamsMembers(), entry -> tr(
+        return each(userDiscoveryBean.findUnregisteredTeamsMembers(), entry -> tr(
                 td(entry.getKey()).withStyle(Styles.TD_STYLE),
                 td(ul().withStyle(Styles.UL_STYLE)
                         .with(each(entry.getValue(),

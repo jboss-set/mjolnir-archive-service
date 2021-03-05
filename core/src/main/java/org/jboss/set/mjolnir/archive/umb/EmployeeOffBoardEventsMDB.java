@@ -5,8 +5,8 @@ import org.jboss.logging.Logger;
 import org.jboss.set.mjolnir.archive.domain.RegisteredUser;
 import org.jboss.set.mjolnir.archive.domain.repositories.RegisteredUserRepositoryBean;
 import org.jboss.set.mjolnir.archive.domain.repositories.RemovalLogRepositoryBean;
-import org.jboss.set.mjolnir.archive.ldap.LdapDiscoveryBean;
-import org.jboss.set.mjolnir.archive.ldap.LdapScanningBean;
+import org.jboss.set.mjolnir.archive.ldap.LdapClientBean;
+import org.jboss.set.mjolnir.archive.UserDiscoveryBean;
 import org.json.JSONObject;
 
 import javax.ejb.ActivationConfigProperty;
@@ -39,13 +39,13 @@ public class EmployeeOffBoardEventsMDB implements MessageListener {
     private RegisteredUserRepositoryBean userRepositoryBean;
 
     @Inject
-    private LdapScanningBean ldapScanningBean;
+    private UserDiscoveryBean userDiscoveryBean;
 
     @Inject
     private RemovalLogRepositoryBean logRepositoryBean;
 
     @Inject
-    private LdapDiscoveryBean ldapDiscoveryBean;
+    private LdapClientBean ldapClientBean;
 
     @Inject
     private EntityManager em;
@@ -90,7 +90,7 @@ public class EmployeeOffBoardEventsMDB implements MessageListener {
             HashSet<String> uids = new HashSet<>();
             uids.add(currentUid);
             try {
-                List<String> allUserUids = ldapDiscoveryBean.findAllUserUids(currentUid);
+                List<String> allUserUids = ldapClientBean.findAllUserUids(currentUid);
                 uids.addAll(allUserUids);
             } catch (NamingException e) {
                 logger.errorf("Couldn't obtain user UIDs from LDAP for user %s", currentUid);
@@ -107,7 +107,7 @@ public class EmployeeOffBoardEventsMDB implements MessageListener {
                     logger.infof("Creating removal for user %s.", user.getKerberosName());
                     logRepositoryBean.logMessage(String.format("Offboard event: Creating removal for user %s.",
                             user.getKerberosName()));
-                    ldapScanningBean.createUserRemoval(user.getKerberosName());
+                    userDiscoveryBean.createUserRemoval(user.getKerberosName());
                 }
             } else if (registeredUsers.size() == 0){
                 logger.infof("User %s is not registered.", currentUid);

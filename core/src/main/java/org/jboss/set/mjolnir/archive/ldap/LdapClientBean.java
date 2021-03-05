@@ -19,7 +19,7 @@ import java.util.Map;
 /**
  * Provides querying of LDAP directory server.
  */
-public class LdapDiscoveryBean {
+public class LdapClientBean {
 
     private static final int GROUPING_FACTOR = 50; // query for that many users at a time
 
@@ -29,10 +29,10 @@ public class LdapDiscoveryBean {
     private LdapClient ldapClient;
 
     @SuppressWarnings("unused")
-    public LdapDiscoveryBean() {
+    public LdapClientBean() {
     }
 
-    LdapDiscoveryBean(Configuration configuration, LdapClient ldapClient) {
+    LdapClientBean(Configuration configuration, LdapClient ldapClient) {
         this.configuration = configuration;
         this.ldapClient = ldapClient;
     }

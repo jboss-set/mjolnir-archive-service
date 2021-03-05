@@ -13,7 +13,7 @@ import org.jboss.set.mjolnir.archive.domain.RepositoryFork;
 import org.jboss.set.mjolnir.archive.domain.RepositoryForkStatus;
 import org.jboss.set.mjolnir.archive.domain.UserRemoval;
 import org.jboss.set.mjolnir.archive.domain.repositories.RemovalLogRepositoryBean;
-import org.jboss.set.mjolnir.archive.github.GitHubDiscoveryBean;
+import org.jboss.set.mjolnir.archive.github.GitHubRepositoriesBean;
 import org.jboss.set.mjolnir.archive.github.GitHubMembershipBean;
 
 import javax.batch.api.AbstractBatchlet;
@@ -46,7 +46,7 @@ public class MembershipRemovalBatchlet extends AbstractBatchlet {
     private Configuration configuration;
 
     @Inject
-    private GitHubDiscoveryBean discoveryBean;
+    private GitHubRepositoriesBean discoveryBean;
 
     @Inject
     private ArchivingBean archivingBean;

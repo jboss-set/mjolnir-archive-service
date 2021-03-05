@@ -2,9 +2,9 @@ package org.jboss.set.mjolnir.archive.mail.report;
 
 import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import org.apache.deltaspike.testcontrol.api.junit.CdiTestRunner;
+import org.jboss.set.mjolnir.archive.UserDiscoveryBean;
 import org.jboss.set.mjolnir.archive.domain.RegisteredUser;
-import org.jboss.set.mjolnir.archive.ldap.LdapDiscoveryBean;
-import org.jboss.set.mjolnir.archive.ldap.LdapScanningBean;
+import org.jboss.set.mjolnir.archive.ldap.LdapClientBean;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
@@ -12,17 +12,16 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.Mockito;
 
 import javax.inject.Inject;
 import javax.naming.NamingException;
 import javax.persistence.EntityManager;
-import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.mock;
 
 @RunWith(CdiTestRunner.class)
 public class WhitelistedUsersReportTableTestCase {
@@ -34,7 +33,10 @@ public class WhitelistedUsersReportTableTestCase {
     private EntityManager em;
 
     @Inject
-    private LdapScanningBean ldapScanningBean;
+    private UserDiscoveryBean userDiscoveryBean;
+
+    @Inject
+    private LdapClientBean ldapClientBeanMock;
 
     @Inject
     private WhitelistedUsersReportTable whitelistedUsersReportTable;
@@ -84,20 +86,16 @@ public class WhitelistedUsersReportTableTestCase {
     }
 
     @Test
-    public void testComposeTableBody() throws NamingException, NoSuchFieldException, IllegalAccessException {
-        LdapDiscoveryBean ldapDiscoveryBean = mock(LdapDiscoveryBean.class);
-        doReturn(false).when(ldapDiscoveryBean).checkUserExists("bobNonExisting");
-        doReturn(true).when(ldapDiscoveryBean).checkUserExists("jimExisting");
-        doReturn(true).when(ldapDiscoveryBean).checkUserExists("carlExisting");
-        doReturn(true).when(ldapDiscoveryBean).checkUserExists("samExisting");
+    public void testComposeTableBody() throws NamingException {
+        Mockito.reset(ldapClientBeanMock);
+        doReturn(false).when(ldapClientBeanMock).checkUserExists("bobNonExisting");
+        doReturn(true).when(ldapClientBeanMock).checkUserExists("jimExisting");
+        doReturn(true).when(ldapClientBeanMock).checkUserExists("carlExisting");
+        doReturn(true).when(ldapClientBeanMock).checkUserExists("samExisting");
 
-        Field ldapDiscoveryBeanField = LdapScanningBean.class.getDeclaredField("ldapDiscoveryBean");
-        ldapDiscoveryBeanField.setAccessible(true);
-        ldapDiscoveryBeanField.set(ldapScanningBean, ldapDiscoveryBean);
+        whitelistedUsersReportTable.userDiscoveryBean = userDiscoveryBean;
 
-        whitelistedUsersReportTable.ldapScanningBean = ldapScanningBean;
-
-        List<RegisteredUser> users = ldapScanningBean.getWhitelistedUsers();
+        List<RegisteredUser> users = userDiscoveryBean.getWhitelistedUsers();
         List<RegisteredUser> usersList = new ArrayList<>(users);
         usersList.sort(new WhitelistedUsersReportTable.GitHubNameComparator());
 

@@ -4,7 +4,6 @@ import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import org.eclipse.egit.github.core.Repository;
 import org.eclipse.egit.github.core.client.GitHubClient;
 import org.eclipse.egit.github.core.service.RepositoryService;
-import org.jboss.set.mjolnir.archive.github.GitHubDiscoveryBean;
 import org.jboss.set.mjolnir.archive.util.TestUtils;
 import org.junit.Before;
 import org.junit.Rule;
@@ -19,7 +18,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.junit.Assert.assertEquals;
 
-public class GitHubDiscoveryBeanTestCase {
+public class GitHubRepositoriesBeanTestCase {
 
     @Rule
     public WireMockRule wireMockRule = new WireMockRule(8089);
@@ -63,7 +62,7 @@ public class GitHubDiscoveryBeanTestCase {
 
     @Test
     public void testGetRepositoriesToArchive() throws Exception {
-        GitHubDiscoveryBean bean = new GitHubDiscoveryBean(client);
+        GitHubRepositoriesBean bean = new GitHubRepositoriesBean(client);
 
         Set<Repository> privateRepositories = bean.getRepositoriesToArchive("testorg", "TomasHofman");
         assertEquals(2, privateRepositories.size());

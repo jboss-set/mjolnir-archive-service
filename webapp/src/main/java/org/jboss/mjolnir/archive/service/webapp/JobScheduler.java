@@ -2,8 +2,8 @@ package org.jboss.mjolnir.archive.service.webapp;
 
 
 import org.jboss.logging.Logger;
+import org.jboss.set.mjolnir.archive.UserDiscoveryBean;
 import org.jboss.set.mjolnir.archive.configuration.Configuration;
-import org.jboss.set.mjolnir.archive.ldap.LdapScanningBean;
 
 import javax.batch.operations.JobOperator;
 import javax.batch.operations.NoSuchJobException;
@@ -28,14 +28,14 @@ public class JobScheduler {
     private Configuration configuration;
 
     @Inject
-    private LdapScanningBean ldapScanningBean;
+    private UserDiscoveryBean userDiscoveryBean;
 
 
     @Schedule(hour = "3", persistent = false)
     public void ldapScan() {
         if (configuration.isRemoveUsersWithoutLdapAccount()) {
             logger.infof("Starting task ldapScan");
-            ldapScanningBean.createRemovalsForUsersWithoutLdapAccount();
+            userDiscoveryBean.createRemovalsForUsersWithoutLdapAccount();
         }
     }
 

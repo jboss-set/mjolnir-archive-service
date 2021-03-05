@@ -4,7 +4,7 @@ import org.eclipse.egit.github.core.client.GitHubClient;
 import org.hibernate.jpa.HibernatePersistenceProvider;
 import org.jboss.set.mjolnir.archive.ArchivingBean;
 import org.jboss.set.mjolnir.archive.configuration.Configuration;
-import org.jboss.set.mjolnir.archive.ldap.LdapDiscoveryBean;
+import org.jboss.set.mjolnir.archive.ldap.LdapClientBean;
 import org.mockito.Mockito;
 
 import javax.enterprise.inject.Alternative;
@@ -96,8 +96,8 @@ public class IntegrationTestProducer {
 
     @Produces
     @Singleton
-    public LdapDiscoveryBean createLdapDiscoveryBeanMock() {
-        return Mockito.mock(LdapDiscoveryBean.class);
+    public LdapClientBean createLdapDiscoveryBeanMock() {
+        return Mockito.mock(LdapClientBean.class);
     }
 
 }

@@ -4,7 +4,7 @@ import j2html.tags.DomContent;
 import org.apache.commons.lang3.StringUtils;
 import org.jboss.set.mjolnir.archive.domain.RegisteredUser;
 import org.jboss.set.mjolnir.archive.domain.repositories.RegisteredUserRepositoryBean;
-import org.jboss.set.mjolnir.archive.ldap.LdapDiscoveryBean;
+import org.jboss.set.mjolnir.archive.ldap.LdapClientBean;
 
 import javax.inject.Inject;
 import javax.naming.NamingException;
@@ -33,7 +33,7 @@ public class InvalidResponsiblePersonTable implements ReportTable {
     private static final String REPORT_TABLE_TITLE = "Invalid Responsible Persons";
 
     @Inject
-    private LdapDiscoveryBean ldapDiscoveryBean;
+    private LdapClientBean ldapClientBean;
 
     @Inject
     private RegisteredUserRepositoryBean userRepositoryBean;
@@ -71,7 +71,7 @@ public class InvalidResponsiblePersonTable implements ReportTable {
                 .filter(StringUtils::isNoneBlank)
                 .collect(Collectors.toSet());
 
-        Map<String, Boolean> userLdapMap = ldapDiscoveryBean.checkUsersExists(setOfResponsiblePersons);
+        Map<String, Boolean> userLdapMap = ldapClientBean.checkUsersExists(setOfResponsiblePersons);
 
         List<String> invalidResponsiblePersons = userLdapMap.entrySet().stream()
                 .filter(entry -> !entry.getValue())

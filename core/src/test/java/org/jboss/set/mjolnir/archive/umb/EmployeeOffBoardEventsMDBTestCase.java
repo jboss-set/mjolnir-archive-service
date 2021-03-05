@@ -3,7 +3,7 @@ package org.jboss.set.mjolnir.archive.umb;
 import org.apache.deltaspike.testcontrol.api.junit.CdiTestRunner;
 import org.jboss.set.mjolnir.archive.domain.RegisteredUser;
 import org.jboss.set.mjolnir.archive.domain.UserRemoval;
-import org.jboss.set.mjolnir.archive.ldap.LdapDiscoveryBean;
+import org.jboss.set.mjolnir.archive.ldap.LdapClientBean;
 import org.json.JSONObject;
 import org.junit.Before;
 import org.junit.Test;
@@ -29,12 +29,12 @@ public class EmployeeOffBoardEventsMDBTestCase {
     private EmployeeOffBoardEventsMDB employeeOffBoardEventsMDB;
 
     @Inject
-    private LdapDiscoveryBean ldapDiscoveryBeanMock;
+    private LdapClientBean ldapClientBeanMock;
 
     @Before
     public void setup() throws Exception {
         // mock ldap bean to return two UIDs for each user (would be current and prior UID)
-        Mockito.when(ldapDiscoveryBeanMock.findAllUserUids(Mockito.anyString()))
+        Mockito.when(ldapClientBeanMock.findAllUserUids(Mockito.anyString()))
                 .thenAnswer((Answer<List<String>>) invocation -> {
                     ArrayList<String> uids = new ArrayList<>();
                     uids.add(invocation.getArgument(0));

@@ -3,8 +3,8 @@ package org.jboss.set.mjolnir.archive.mail.report;
 import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import org.apache.deltaspike.testcontrol.api.junit.CdiTestRunner;
 import org.jboss.set.mjolnir.archive.domain.RegisteredUser;
-import org.jboss.set.mjolnir.archive.ldap.LdapDiscoveryBean;
-import org.jboss.set.mjolnir.archive.ldap.LdapScanningBean;
+import org.jboss.set.mjolnir.archive.ldap.LdapClientBean;
+import org.jboss.set.mjolnir.archive.UserDiscoveryBean;
 import org.jboss.set.mjolnir.archive.util.MockitoAnswers;
 import org.jboss.set.mjolnir.archive.util.TestUtils;
 import org.jsoup.Jsoup;
@@ -37,10 +37,10 @@ public class UsersWithoutLdapReportTableTestCase {
     private EntityManager em;
 
     @Inject
-    private LdapScanningBean ldapScanningBean;
+    private UserDiscoveryBean userDiscoveryBean;
 
     @Inject
-    private LdapDiscoveryBean ldapDiscoveryBeanMock;
+    private LdapClientBean ldapClientBeanMock;
 
     @Inject
     private UsersWithoutLdapReportTable usersWithoutLdapReportTable;
@@ -49,8 +49,8 @@ public class UsersWithoutLdapReportTableTestCase {
     public void setup() throws IOException, URISyntaxException, NamingException {
         TestUtils.setupGitHubApiStubs();
 
-        Mockito.reset(ldapDiscoveryBeanMock);
-        Mockito.when(ldapDiscoveryBeanMock.checkUsersExists(anyCollection()))
+        Mockito.reset(ldapClientBeanMock);
+        Mockito.when(ldapClientBeanMock.checkUsersExists(anyCollection()))
                 .thenAnswer(new MockitoAnswers.UsersNotInLdapAnswer());
 
         em.getTransaction().begin();
@@ -72,7 +72,7 @@ public class UsersWithoutLdapReportTableTestCase {
 
     @Test
     public void testComposeTableBody() throws IOException, NamingException {
-        Collection<String> users = ldapScanningBean.findAllUsersWithoutLdapAccount();
+        Collection<String> users = userDiscoveryBean.findAllUsersWithoutLdapAccount();
         assertThat(users).containsOnly("ben", "bob");
 
         List<String> usersList = new ArrayList<>(users);

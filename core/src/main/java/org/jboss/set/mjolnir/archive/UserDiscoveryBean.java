@@ -1,4 +1,4 @@
-package org.jboss.set.mjolnir.archive.ldap;
+package org.jboss.set.mjolnir.archive;
 
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.egit.github.core.User;
@@ -10,6 +10,7 @@ import org.jboss.set.mjolnir.archive.domain.RemovalLog;
 import org.jboss.set.mjolnir.archive.domain.UserRemoval;
 import org.jboss.set.mjolnir.archive.domain.repositories.RegisteredUserRepositoryBean;
 import org.jboss.set.mjolnir.archive.github.GitHubMembershipBean;
+import org.jboss.set.mjolnir.archive.ldap.LdapClientBean;
 
 import javax.inject.Inject;
 import javax.naming.NamingException;
@@ -33,7 +34,7 @@ import java.util.stream.Collectors;
  * relying on JMS messages.
  */
 @SuppressWarnings("UnnecessaryLocalVariable")
-public class LdapScanningBean {
+public class UserDiscoveryBean {
 
     private final Logger logger = Logger.getLogger(getClass());
 
@@ -41,7 +42,7 @@ public class LdapScanningBean {
     private EntityManager em;
 
     @Inject
-    private LdapDiscoveryBean ldapDiscoveryBean;
+    private LdapClientBean ldapClientBean;
 
     @Inject
     private GitHubMembershipBean gitHubMembershipBean;
@@ -152,7 +153,7 @@ public class LdapScanningBean {
         logger.infof("Out of all members, %d are registered users.", githubToLdapUsernames.size());
 
         // search for users that do not have active LDAP account
-        Map<String, Boolean> usersLdapMap = ldapDiscoveryBean.checkUsersExists(githubToLdapUsernames.values());
+        Map<String, Boolean> usersLdapMap = ldapClientBean.checkUsersExists(githubToLdapUsernames.values());
         Map<String, String> result = githubToLdapUsernames.entrySet().stream()
                 .filter(entry -> !usersLdapMap.get(entry.getValue()))
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));

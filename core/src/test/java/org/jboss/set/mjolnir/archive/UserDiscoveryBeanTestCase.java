@@ -1,4 +1,4 @@
-package org.jboss.set.mjolnir.archive.ldap;
+package org.jboss.set.mjolnir.archive;
 
 import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import org.apache.deltaspike.core.util.ArraysUtils;
@@ -8,6 +8,7 @@ import org.jboss.set.mjolnir.archive.domain.GitHubOrganization;
 import org.jboss.set.mjolnir.archive.domain.GitHubTeam;
 import org.jboss.set.mjolnir.archive.domain.RegisteredUser;
 import org.jboss.set.mjolnir.archive.domain.UserRemoval;
+import org.jboss.set.mjolnir.archive.ldap.LdapClientBean;
 import org.jboss.set.mjolnir.archive.util.MockitoAnswers;
 import org.junit.After;
 import org.junit.Assert;
@@ -39,7 +40,7 @@ import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.Mockito.doReturn;
 
 @RunWith(CdiTestRunner.class)
-public class LdapScanningBeanTestCase {
+public class UserDiscoveryBeanTestCase {
 
     @Rule
     public WireMockRule wireMockRule = new WireMockRule(8089);
@@ -48,10 +49,10 @@ public class LdapScanningBeanTestCase {
     private EntityManager em;
 
     @Inject
-    private LdapScanningBean ldapScanningBean;
+    private UserDiscoveryBean userDiscoveryBean;
 
     @Inject
-    private LdapDiscoveryBean ldapDiscoveryBeanMock;
+    private LdapClientBean ldapClientBeanMock;
 
     @Before
     public void setup() throws IOException, URISyntaxException, NamingException {
@@ -102,16 +103,16 @@ public class LdapScanningBeanTestCase {
 
 
         // mock LdapDiscoveryBean behaviour
-        Mockito.reset(ldapDiscoveryBeanMock);
-        doReturn(false).when(ldapDiscoveryBeanMock).checkUserExists("bobNonExisting");
-        doReturn(true).when(ldapDiscoveryBeanMock).checkUserExists("jimExisting");
-        doReturn(false).when(ldapDiscoveryBeanMock).checkUserExists("ben");
-        doReturn(false).when(ldapDiscoveryBeanMock).checkUserExists("bob");
+        Mockito.reset(ldapClientBeanMock);
+        doReturn(false).when(ldapClientBeanMock).checkUserExists("bobNonExisting");
+        doReturn(true).when(ldapClientBeanMock).checkUserExists("jimExisting");
+        doReturn(false).when(ldapClientBeanMock).checkUserExists("ben");
+        doReturn(false).when(ldapClientBeanMock).checkUserExists("bob");
 
         HashMap<Object, Object> ldapUsersMap = new HashMap<>();
         ldapUsersMap.put("ben", false);
         ldapUsersMap.put("bob", false);
-        doReturn(ldapUsersMap).when(ldapDiscoveryBeanMock).checkUsersExists(ArraysUtils.asSet("ben", "bob"));
+        doReturn(ldapUsersMap).when(ldapClientBeanMock).checkUsersExists(ArraysUtils.asSet("ben", "bob"));
     }
 
     @After
@@ -128,7 +129,7 @@ public class LdapScanningBeanTestCase {
         Assert.assertTrue(query.getResultList().isEmpty());
 
         // create removals
-        ldapScanningBean.createUserRemovals(Arrays.asList("ben", "bob"));
+        userDiscoveryBean.createUserRemovals(Arrays.asList("ben", "bob"));
 
         // check removals were created
         List<UserRemoval> removals = query.getResultList();
@@ -137,7 +138,7 @@ public class LdapScanningBeanTestCase {
                 .containsOnly("ben", "bob");
 
         // create the same removals again
-        ldapScanningBean.createUserRemovals(Arrays.asList("ben", "bob"));
+        userDiscoveryBean.createUserRemovals(Arrays.asList("ben", "bob"));
 
         // check that duplicates were not created
         removals = query.getResultList();
@@ -149,7 +150,7 @@ public class LdapScanningBeanTestCase {
 
     @Test
     public void testAllOrganizationMembers() throws IOException {
-        HashMap<String, List<GitHubTeam>> members = ldapScanningBean.getAllTeamsMembers();
+        HashMap<String, List<GitHubTeam>> members = userDiscoveryBean.getAllTeamsMembers();
         assertThat(members.keySet()).containsOnly("bob", "ben");
         assertThat(members.get("bob")).extracting("name").containsOnly("Team 1");
         assertThat(members.get("ben")).extracting("name").containsOnly("Team 2");
@@ -159,7 +160,7 @@ public class LdapScanningBeanTestCase {
     public void testGetUnregisteredTeamsMembers() throws IOException {
         createRegisteredUser(null, "bob", false);
 
-        Map<String, List<GitHubTeam>> members = ldapScanningBean.findUnregisteredTeamsMembers();
+        Map<String, List<GitHubTeam>> members = userDiscoveryBean.findUnregisteredTeamsMembers();
         assertThat(members.keySet()).containsOnly("ben");
         assertThat(members.get("ben")).extracting("name").containsOnly("Team 2");
     }
@@ -168,7 +169,7 @@ public class LdapScanningBeanTestCase {
     public void testGetUnregisteredTeamsMembersCaseInsensitive() throws IOException {
         createRegisteredUser(null, "Bob", false);
 
-        Map<String, List<GitHubTeam>> members = ldapScanningBean.findUnregisteredTeamsMembers();
+        Map<String, List<GitHubTeam>> members = userDiscoveryBean.findUnregisteredTeamsMembers();
         assertThat(members.keySet()).containsOnly("ben");
         assertThat(members.get("ben")).extracting("name").containsOnly("Team 2");
     }
@@ -177,7 +178,7 @@ public class LdapScanningBeanTestCase {
     public void testUnregisteredOrganizationMembers() throws IOException {
         createRegisteredUser(null, "bob", false);
 
-        Map<String, List<GitHubOrganization>> members = ldapScanningBean.findUnregisteredOrganizationsMembers();
+        Map<String, List<GitHubOrganization>> members = userDiscoveryBean.findUnregisteredOrganizationsMembers();
         assertThat(members.keySet()).containsOnly("ben");
         assertThat(members.get("ben")).extracting("name").containsOnly("testorg");
     }
@@ -186,7 +187,7 @@ public class LdapScanningBeanTestCase {
     public void testUnregisteredOrganizationMembersCaseInsensitive() throws IOException {
         createRegisteredUser(null, "Bob", false);
 
-        Map<String, List<GitHubOrganization>> members = ldapScanningBean.findUnregisteredOrganizationsMembers();
+        Map<String, List<GitHubOrganization>> members = userDiscoveryBean.findUnregisteredOrganizationsMembers();
         assertThat(members.keySet()).containsOnly("ben");
         assertThat(members.get("ben")).extracting("name").containsOnly("testorg");
     }
@@ -199,9 +200,9 @@ public class LdapScanningBeanTestCase {
         HashMap<String, Boolean> usersLdapMap = new HashMap<>();
         usersLdapMap.put("ben", false);
         usersLdapMap.put("bob", true);
-        Mockito.when(ldapDiscoveryBeanMock.checkUsersExists(anyCollection())).thenReturn(usersLdapMap);
+        Mockito.when(ldapClientBeanMock.checkUsersExists(anyCollection())).thenReturn(usersLdapMap);
 
-        Collection<String> users = ldapScanningBean.findAllUsersWithoutLdapAccount();
+        Collection<String> users = userDiscoveryBean.findAllUsersWithoutLdapAccount();
         assertThat(users).containsOnly("ben");
     }
 
@@ -213,9 +214,9 @@ public class LdapScanningBeanTestCase {
         HashMap<String, Boolean> usersLdapMap = new HashMap<>();
         usersLdapMap.put("ben", false);
         usersLdapMap.put("bob", true);
-        Mockito.when(ldapDiscoveryBeanMock.checkUsersExists(anyCollection())).thenReturn(usersLdapMap);
+        Mockito.when(ldapClientBeanMock.checkUsersExists(anyCollection())).thenReturn(usersLdapMap);
 
-        Map<String, List<GitHubOrganization>> users = ldapScanningBean.findOrganizationsMembersWithoutLdapAccount();
+        Map<String, List<GitHubOrganization>> users = userDiscoveryBean.findOrganizationsMembersWithoutLdapAccount();
 
         assertThat(users.keySet()).containsOnly("ben");
         assertThat(users.get("ben")).extracting("name").containsOnly("testorg");
@@ -229,9 +230,9 @@ public class LdapScanningBeanTestCase {
         HashMap<String, Boolean> usersLdapMap = new HashMap<>();
         usersLdapMap.put("ben", false);
         usersLdapMap.put("bob", true);
-        Mockito.when(ldapDiscoveryBeanMock.checkUsersExists(anyCollection())).thenReturn(usersLdapMap);
+        Mockito.when(ldapClientBeanMock.checkUsersExists(anyCollection())).thenReturn(usersLdapMap);
 
-        Map<String, List<GitHubTeam>> users = ldapScanningBean.findTeamsMembersWithoutLdapAccount();
+        Map<String, List<GitHubTeam>> users = userDiscoveryBean.findTeamsMembersWithoutLdapAccount();
 
         assertThat(users.keySet()).containsOnly("ben");
         assertThat(users.get("ben")).extracting("name").containsOnly("Team 2");
@@ -244,7 +245,7 @@ public class LdapScanningBeanTestCase {
         createRegisteredUser(null, "ben", true);
         createRegisteredUser(null, "joe", false);
 
-        List<RegisteredUser> members = ldapScanningBean.getWhitelistedUsers();
+        List<RegisteredUser> members = userDiscoveryBean.getWhitelistedUsers();
         assertThat(members)
                 .extracting("githubName")
                 .containsOnly("ben", "bob", "jim");
@@ -257,7 +258,7 @@ public class LdapScanningBeanTestCase {
         createRegisteredUser(null, "BEN", true);
         createRegisteredUser(null, "JOE", false);
 
-        List<RegisteredUser> members = ldapScanningBean.getWhitelistedUsers();
+        List<RegisteredUser> members = userDiscoveryBean.getWhitelistedUsers();
         assertThat(members)
                 .extracting("githubName", "responsiblePerson")
                 .containsOnly(
@@ -269,7 +270,7 @@ public class LdapScanningBeanTestCase {
 
     @Test
     public void testAllUsersTeams() throws IOException {
-        List<GitHubTeam> teams = ldapScanningBean.getAllUsersTeams("bob");
+        List<GitHubTeam> teams = userDiscoveryBean.getAllUsersTeams("bob");
         assertThat(teams)
                 .extracting("name")
                 .containsOnly("Team 1", "Team 3");
@@ -279,10 +280,10 @@ public class LdapScanningBeanTestCase {
     public void testCreateRemovalsForUsersWithoutLdapAccount() throws NamingException {
         createRegisteredUser("bob", "bob", false);
         createRegisteredUser("ben", "ben", false);
-        Mockito.when(ldapDiscoveryBeanMock.checkUsersExists(anyCollection()))
+        Mockito.when(ldapClientBeanMock.checkUsersExists(anyCollection()))
                 .thenAnswer(new MockitoAnswers.UsersNotInLdapAnswer());
 
-        ldapScanningBean.createRemovalsForUsersWithoutLdapAccount();
+        userDiscoveryBean.createRemovalsForUsersWithoutLdapAccount();
 
         TypedQuery<UserRemoval> query = em.createNamedQuery(UserRemoval.FIND_REMOVALS_TO_PROCESS, UserRemoval.class);
         List<UserRemoval> removals = query.getResultList();
@@ -295,10 +296,10 @@ public class LdapScanningBeanTestCase {
     public void testCreateRemovalsForUsersWithoutLdapAccountCaseInsensitive() throws NamingException {
         createRegisteredUser("bob", "BOB", false);
         createRegisteredUser("ben", "BEN", false);
-        Mockito.when(ldapDiscoveryBeanMock.checkUsersExists(anyCollection()))
+        Mockito.when(ldapClientBeanMock.checkUsersExists(anyCollection()))
                 .thenAnswer(new MockitoAnswers.UsersNotInLdapAnswer());
 
-        ldapScanningBean.createRemovalsForUsersWithoutLdapAccount();
+        userDiscoveryBean.createRemovalsForUsersWithoutLdapAccount();
 
         TypedQuery<UserRemoval> query = em.createNamedQuery(UserRemoval.FIND_REMOVALS_TO_PROCESS, UserRemoval.class);
         List<UserRemoval> removals = query.getResultList();
@@ -313,10 +314,10 @@ public class LdapScanningBeanTestCase {
         createRegisteredUser("ben", "ben", false);
         // create already existing removal
         createUserRemoval("bob");
-        Mockito.when(ldapDiscoveryBeanMock.checkUsersExists(anyCollection()))
+        Mockito.when(ldapClientBeanMock.checkUsersExists(anyCollection()))
                 .thenAnswer(new MockitoAnswers.UsersNotInLdapAnswer());
 
-        ldapScanningBean.createRemovalsForUsersWithoutLdapAccount();
+        userDiscoveryBean.createRemovalsForUsersWithoutLdapAccount();
 
         // verify that the removal for bob is not duplicated
         TypedQuery<UserRemoval> query = em.createNamedQuery(UserRemoval.FIND_REMOVALS_TO_PROCESS, UserRemoval.class);
