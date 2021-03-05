@@ -1,26 +1,33 @@
 package org.jboss.set.mjolnir.archive.mail.report;
 
 import j2html.tags.DomContent;
+import org.jboss.set.mjolnir.archive.domain.GitHubOrganization;
+import org.jboss.set.mjolnir.archive.domain.GitHubTeam;
 import org.jboss.set.mjolnir.archive.ldap.LdapScanningBean;
 
 import javax.inject.Inject;
 import javax.naming.NamingException;
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import static j2html.TagCreator.div;
 import static j2html.TagCreator.each;
 import static j2html.TagCreator.h2;
+import static j2html.TagCreator.li;
 import static j2html.TagCreator.p;
 import static j2html.TagCreator.table;
 import static j2html.TagCreator.td;
 import static j2html.TagCreator.th;
 import static j2html.TagCreator.tr;
+import static j2html.TagCreator.ul;
 
 /**
  * Prints a list GH users who are members of monitored GH teams, are registered in the Mjolnir database, but their
  * LDAP accounts are not active (i.e. probably left the company).
  */
+@SuppressWarnings("UnnecessaryLocalVariable")
 public class UsersWithoutLdapReportTable implements ReportTable {
 
     private static final String REPORT_TABLE_TITLE = "Users without an LDAP Account";
@@ -37,19 +44,44 @@ public class UsersWithoutLdapReportTable implements ReportTable {
                         .withStyle(Styles.SUB_HEADING_STYLE),
                 table().withStyle(Styles.TABLE_STYLE + Styles.TD_STYLE).with(
                         tr().with(
-                                th(Constants.LDAP_NAME).withStyle(Styles.TH_STYLE)
+                                th(Constants.LDAP_NAME).withStyle(Styles.TH_STYLE),
+                                th(Constants.ORGANIZATIONS + " / " + Constants.TEAMS).withStyle(Styles.TH_STYLE)
                         ),
-                        addUserWithoutLdapRows()
+                        addOrganizationsMembersRows(),
+                        addTeamsMembersRows()
                 ))
                 .render();
         return html;
     }
 
-    private DomContent addUserWithoutLdapRows() throws IOException, NamingException {
-        List<String> usersWithoutLdap = ldapScanningBean.getTeamMembersWithoutLdapAccount();
-        usersWithoutLdap.sort(String::compareToIgnoreCase);
-        return each(usersWithoutLdap, user -> tr(
-                td(user).withStyle(Styles.TD_STYLE)
+    private DomContent addOrganizationsMembersRows() throws IOException, NamingException {
+        // produce sorted entry lists
+        List<Map.Entry<String, List<GitHubOrganization>>> organizationsMembers =
+                ldapScanningBean.findOrganizationsMembersWithoutLdapAccount().entrySet().stream()
+                        .sorted(Map.Entry.comparingByKey())
+                        .collect(Collectors.toList());
+
+        return each(organizationsMembers, entry -> tr(
+                td(entry.getKey()).withStyle(Styles.TD_STYLE),
+                td(ul().withStyle(Styles.UL_STYLE)
+                        .with(each(entry.getValue(), team -> li(team.getName()))))
+                        .withStyle(Styles.TD_STYLE)
+        ));
+    }
+
+    private DomContent addTeamsMembersRows() throws IOException, NamingException {
+        // produce sorted entry list
+        List<Map.Entry<String, List<GitHubTeam>>> teamsMembers =
+                ldapScanningBean.findTeamsMembersWithoutLdapAccount().entrySet().stream()
+                        .sorted(Map.Entry.comparingByKey())
+                        .collect(Collectors.toList());
+
+        return each(teamsMembers, entry -> tr(
+                td(entry.getKey()).withStyle(Styles.TD_STYLE),
+                td(ul().withStyle(Styles.UL_STYLE)
+                        .with(each(entry.getValue(),
+                                team -> li(team.getOrganization().getName() + "/" + team.getName()))))
+                        .withStyle(Styles.TD_STYLE)
         ));
     }
 

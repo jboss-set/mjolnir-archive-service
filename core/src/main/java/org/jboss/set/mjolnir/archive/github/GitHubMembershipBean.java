@@ -9,9 +9,10 @@ import org.jboss.set.mjolnir.archive.domain.GitHubTeam;
 
 import javax.inject.Inject;
 import java.io.IOException;
-import java.util.HashSet;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
 
 /**
  * Provides user membership management capabilities.
@@ -66,12 +67,29 @@ public class GitHubMembershipBean {
     /**
      * Retrieves members of all organization teams.
      */
-    public Set<User> getAllTeamsMembers(GitHubOrganization organization) throws IOException {
-        Set<User> members = new HashSet<>();
+    public Map<GitHubTeam, List<User>> getAllTeamsMembers(GitHubOrganization organization) throws IOException {
+        HashMap<GitHubTeam, List<User>> map = new HashMap<>();
         for (GitHubTeam team : organization.getTeams()) {
-            members.addAll(teamService.getMembers(organization.getName(), team.getGithubId()));
+            List<User> members = teamService.getMembers(organization.getName(), team.getGithubId());
+            if (members.size() > 0) {
+                map.put(team, members);
+            }
         }
-        return members;
+        return map;
+    }
+
+    /**
+     * Retrieves members of a GH team.
+     */
+    public List<User> getTeamsMembers(GitHubTeam team) throws IOException {
+        return teamService.getMembers(team.getOrganization().getName(), team.getGithubId());
+    }
+
+    /**
+     * Retrieves members of an organization.
+     */
+    public Collection<User> getOrganizationMembers(GitHubOrganization organization) throws IOException {
+        return organizationService.getMembers(organization.getName());
     }
 
     public boolean isMember(String githubUser, GitHubTeam team) throws IOException {

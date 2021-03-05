@@ -18,6 +18,7 @@ import javax.persistence.EntityTransaction;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -70,42 +71,93 @@ public class LdapScanningBean {
         logger.infof("Starting job to create user removals");
 
         // get users without ldap account
-        Collection<String> usersWithoutLdapAccount = getTeamMembersWithoutLdapAccount();
+        Collection<String> usersWithoutLdapAccount = findAllUsersWithoutLdapAccount();
 
         // create removal records
         createUserRemovals(usersWithoutLdapAccount);
     }
 
-    public List<String> getTeamMembersWithoutLdapAccount() throws IOException, NamingException {
-        // collect members of all teams
-        Set<String> allMembers = getAllTeamsMembers();
-        logger.infof("Found %d members of all organizations teams.", allMembers.size());
+    /**
+     * Finds all registered users who are members of monitored GitHub organizations or teams, and do not have an
+     * active LDAP account.
+     *
+     * @return LDAP usernames
+     */
+    public Collection<String> findAllUsersWithoutLdapAccount() throws IOException, NamingException {
+        // collect members of all teams and organizations
+        HashMap<String, List<GitHubTeam>> allTeamsMembers = getAllTeamsMembers();
+        HashMap<String, List<GitHubOrganization>> allOrganizationsMembers = getAllOrganizationsMembers();
 
+        HashSet<String> githubUsernames = new HashSet<>();
+        githubUsernames.addAll(allTeamsMembers.keySet());
+        githubUsernames.addAll(allOrganizationsMembers.keySet());
+        logger.infof("Found %d members of all organizations teams.", githubUsernames.size());
+
+        return findUsersWithoutLdapAccount(githubUsernames).values();
+    }
+
+    /**
+     * Finds all registered users who are members of monitored GitHub organizations, and do not have an active
+     * LDAP account.
+     *
+     * @return map LDAP username => list of organizations
+     */
+    public Map<String, List<GitHubOrganization>> findOrganizationsMembersWithoutLdapAccount()
+            throws IOException, NamingException {
+        // gh username => list of orgs map
+        HashMap<String, List<GitHubOrganization>> allOrganizationsMembers = getAllOrganizationsMembers();
+        // gh username => ldap username map
+        Map<String, String> usersWithoutLdapAccount = findUsersWithoutLdapAccount(allOrganizationsMembers.keySet());
+        return usersWithoutLdapAccount.entrySet().stream()
+                .collect(Collectors.toMap(Map.Entry::getValue, entry -> allOrganizationsMembers.get(entry.getKey())));
+    }
+
+    /**
+     * Finds all registered users who are members of monitored GitHub teams, and do not have an active
+     * LDAP account.
+     *
+     * @return map LDAP username => list of teams
+     */
+    public Map<String, List<GitHubTeam>> findTeamsMembersWithoutLdapAccount()
+            throws IOException, NamingException {
+        // gh username => list of teams map
+        HashMap<String, List<GitHubTeam>> allTeamsMembers = getAllTeamsMembers();
+        // gh username => ldap username map
+        Map<String, String> usersWithoutLdapAccount = findUsersWithoutLdapAccount(allTeamsMembers.keySet());
+        return usersWithoutLdapAccount.entrySet().stream()
+                .collect(Collectors.toMap(Map.Entry::getValue, entry -> allTeamsMembers.get(entry.getKey())));
+    }
+
+    /**
+     * Finds users who are registered in Mjolnir database but do not have an active LDAP account.
+     *
+     * @param githubUsernames GitHub usernames to check
+     * @return map GitHub username => LDAP username
+     */
+    Map<String, String> findUsersWithoutLdapAccount(Collection<String> githubUsernames) throws NamingException {
         // retrieve kerberos names of collected users (those that we know and are not whitelisted)
-        HashSet<String> krbNames = new HashSet<>();
-        allMembers.forEach(member -> {
-            Optional<RegisteredUser> registeredUser = userRepositoryBean.findByGitHubUsername(member);
+        HashMap<String, String> githubToLdapUsernames = new HashMap<>();
+        githubUsernames.forEach(githubUsername -> {
+            Optional<RegisteredUser> registeredUser = userRepositoryBean.findByGitHubUsername(githubUsername);
             registeredUser.ifPresent(user -> {
                 if (user.isWhitelisted()) {
                     logger.infof("Skipping whitelisted user %s.", user.getGithubName());
                 } else if (StringUtils.isBlank(user.getKerberosName())) {
                     logger.warnf("Skipping user %s because of unknown LDAP name.", user.getGithubName());
                 } else {
-                    krbNames.add(user.getKerberosName());
+                    githubToLdapUsernames.put(githubUsername, user.getKerberosName());
                 }
             });
         });
-        logger.infof("Out of all members, %d are registered users.", krbNames.size());
+        logger.infof("Out of all members, %d are registered users.", githubToLdapUsernames.size());
 
         // search for users that do not have active LDAP account
-        Map<String, Boolean> usersLdapMap = ldapDiscoveryBean.checkUsersExists(krbNames);
-        List<String> usersWithoutLdapAccount = usersLdapMap.entrySet().stream()
-                .filter(entry -> !entry.getValue())
-                .map(Map.Entry::getKey)
-                .collect(Collectors.toList());
-        logger.infof("Detected %d users that do not have active LDAP account.", usersWithoutLdapAccount.size());
-
-        return usersWithoutLdapAccount;
+        Map<String, Boolean> usersLdapMap = ldapDiscoveryBean.checkUsersExists(githubToLdapUsernames.values());
+        Map<String, String> result = githubToLdapUsernames.entrySet().stream()
+                .filter(entry -> !usersLdapMap.get(entry.getValue()))
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+        logger.infof("Detected %d users that do not have active LDAP account.", result.size());
+        return result;
     }
 
     public List<RegisteredUser> getWhitelistedUsers() {
@@ -114,32 +166,86 @@ public class LdapScanningBean {
 
     /**
      * Collects members of all monitored GH teams.
+     *
+     * @return map GitHub username => list of GH teams
      */
-    Set<String> getAllTeamsMembers() throws IOException {
+    HashMap<String, List<GitHubTeam>> getAllTeamsMembers() throws IOException {
         List<GitHubOrganization> organizations =
                 em.createNamedQuery(GitHubOrganization.FIND_ALL, GitHubOrganization.class).getResultList();
 
-        HashSet<User> users = new HashSet<>();
+        HashMap<String, List<GitHubTeam>> usersMap = new HashMap<>();
         for (GitHubOrganization organization : organizations) {
-            users.addAll(gitHubMembershipBean.getAllTeamsMembers(organization));
+            for (GitHubTeam team: organization.getTeams()) {
+                for (User user: gitHubMembershipBean.getTeamsMembers(team)) {
+                    List<GitHubTeam> usersTeams = usersMap.computeIfAbsent(user.getLogin(), u -> new ArrayList<>());
+                    usersTeams.add(team);
+                }
+            }
         }
 
-        return users.stream()
-                .map(User::getLogin)
-                .collect(Collectors.toSet());
+        return usersMap;
     }
 
-    public Set<String> getUnregisteredOrganizationMembers() throws IOException {
-        Set<String> allMembers = getAllTeamsMembers();
+    /**
+     * Collects members of all monitored GH organizations.
+     *
+     * @return map GitHub username => list of GH orgs
+     */
+    HashMap<String, List<GitHubOrganization>> getAllOrganizationsMembers() throws IOException {
+        List<GitHubOrganization> organizations =
+                em.createNamedQuery(GitHubOrganization.FIND_ALL, GitHubOrganization.class).getResultList();
+
+        HashMap<String, List<GitHubOrganization>> usersMap = new HashMap<>();
+        for (GitHubOrganization organization : organizations) {
+            if (organization.isUnsubscribeUsersFromOrg()) {
+                for (User user: gitHubMembershipBean.getOrganizationMembers(organization)) {
+                    List<GitHubOrganization> usersOrgs = usersMap.computeIfAbsent(user.getLogin(), u -> new ArrayList<>());
+                    usersOrgs.add(organization);
+                }
+            }
+        }
+
+        return usersMap;
+    }
+
+    /**
+     * Finds all monitored GitHub teams members who are not registered in the Mjolnir database.
+     *
+     * @return list of GitHub usernames
+     */
+    public Map<String, List<GitHubTeam>> findUnregisteredTeamsMembers() throws IOException {
+        HashMap<String, List<GitHubTeam>> allMembers = getAllTeamsMembers();
         List<RegisteredUser> registeredUsers = em.createNamedQuery(RegisteredUser.FIND_ALL, RegisteredUser.class).getResultList();
 
-        Set<String> unregisteredMembers = allMembers.stream()
-                .filter(user -> !containsRegisteredUser(user, registeredUsers))
-                .collect(Collectors.toSet());
+        Map<String, List<GitHubTeam>> unregisteredMembersMap = allMembers.entrySet().stream()
+                .filter(entry -> !containsRegisteredUser(entry.getKey(), registeredUsers))
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
-        return unregisteredMembers;
+        return unregisteredMembersMap;
     }
 
+    /**
+     * Finds all monitored GitHub organizations members who are not registered in the Mjolnir database.
+     *
+     * @return list of GitHub usernames
+     */
+    public Map<String, List<GitHubOrganization>> findUnregisteredOrganizationsMembers() throws IOException {
+        HashMap<String, List<GitHubOrganization>> allMembers = getAllOrganizationsMembers();
+        List<RegisteredUser> registeredUsers = em.createNamedQuery(RegisteredUser.FIND_ALL, RegisteredUser.class).getResultList();
+
+        Map<String, List<GitHubOrganization>> unregisteredMembersMap = allMembers.entrySet().stream()
+                .filter(entry -> !containsRegisteredUser(entry.getKey(), registeredUsers))
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+
+        return unregisteredMembersMap;
+    }
+
+    /**
+     * Finds all teams that a GitHub user is member of.
+     *
+     * @deprecated The users-teams/orgs relationships can be obtained straight away via `findUnregisteredTeamsMembers()`
+     *   and `getUnregisteredOrganizationsMembers()`.
+     */
     public List<GitHubTeam> getAllUsersTeams(String gitHubUser) throws IOException {
         List<GitHubTeam> memberTeams = new ArrayList<>();
 

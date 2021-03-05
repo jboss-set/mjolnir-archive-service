@@ -1,16 +1,10 @@
 package org.jboss.set.mjolnir.archive.mail.report;
 
 import j2html.tags.DomContent;
-import org.jboss.set.mjolnir.archive.domain.GitHubTeam;
 import org.jboss.set.mjolnir.archive.ldap.LdapScanningBean;
 
 import javax.inject.Inject;
 import java.io.IOException;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.SortedMap;
-import java.util.TreeMap;
 
 import static j2html.TagCreator.div;
 import static j2html.TagCreator.each;
@@ -26,6 +20,7 @@ import static j2html.TagCreator.ul;
 /**
  * Prints a list of GH users who are members of monitored GH teams, but are not registered in the Mjolnir database.
  */
+@SuppressWarnings("UnnecessaryLocalVariable")
 public class UnregisteredMembersReportTable implements ReportTable {
 
     @Inject
@@ -41,31 +36,33 @@ public class UnregisteredMembersReportTable implements ReportTable {
                 table().withStyle(Styles.TABLE_STYLE + Styles.TD_STYLE).with(
                         tr().with(
                                 th(Constants.LDAP_NAME).withStyle(Styles.TH_STYLE),
-                                th(Constants.TEAMS).withStyle(Styles.TH_STYLE)
+                                th(Constants.ORGANIZATIONS + " / " + Constants.TEAMS).withStyle(Styles.TH_STYLE)
                         ),
-                        addUnregisteredOrganizationMembersRows(getUnregisteredMembersWithTeams())
+                        addUnregisteredOrganizationMembersRows(),
+                        addUnregisteredTeamMembersRows()
                 ))
                 .render();
         return html;
     }
 
-    private <T> DomContent addUnregisteredOrganizationMembersRows(Map<String, List<GitHubTeam>> userTeams) {
-        return each(userTeams, userTeam -> tr(
-                td(userTeam.getKey()).withStyle(Styles.TD_STYLE),
-                td(
-                        ul().withStyle(Styles.UL_STYLE)
-                                .with(each(userTeam.getValue(), team -> li(team.getName())))
+    private DomContent addUnregisteredOrganizationMembersRows() throws IOException {
+        return each(ldapScanningBean.findUnregisteredOrganizationsMembers(), entry -> tr(
+                td(entry.getKey()).withStyle(Styles.TD_STYLE),
+                td(ul().withStyle(Styles.UL_STYLE)
+                        .with(each(entry.getValue(),
+                                team -> li(team.getName())))
                 ).withStyle(Styles.BORDER_STYLE)
         ));
     }
 
-    private Map<String, List<GitHubTeam>> getUnregisteredMembersWithTeams() throws IOException {
-        Set<String> unregisteredOrganizationMembers = ldapScanningBean.getUnregisteredOrganizationMembers();
-        SortedMap<String, List<GitHubTeam>> userTeams = new TreeMap<>(String::compareToIgnoreCase);
-        for (String member : unregisteredOrganizationMembers) {
-            userTeams.put(member, ldapScanningBean.getAllUsersTeams(member));
-        }
-
-        return userTeams;
+    private DomContent addUnregisteredTeamMembersRows() throws IOException {
+        return each(ldapScanningBean.findUnregisteredTeamsMembers(), entry -> tr(
+                td(entry.getKey()).withStyle(Styles.TD_STYLE),
+                td(ul().withStyle(Styles.UL_STYLE)
+                        .with(each(entry.getValue(),
+                                team -> li(team.getOrganization().getName() + "/" + team.getName())))
+                ).withStyle(Styles.BORDER_STYLE)
+        ));
     }
+
 }

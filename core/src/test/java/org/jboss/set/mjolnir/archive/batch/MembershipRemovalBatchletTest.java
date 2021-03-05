@@ -117,18 +117,22 @@ public class MembershipRemovalBatchletTest {
 
     @Test
     public void testBatchlet() throws Exception {
+        setUnsubscribeFromOrganization(false);
         verifyBatchletProcessing(false);
     }
 
     @Test
     public void testBatchlet_removeFromOrg() throws Exception {
+        setUnsubscribeFromOrganization(true);
+        verifyBatchletProcessing(true);
+    }
+
+    private void setUnsubscribeFromOrganization(boolean enable) {
         em.getTransaction().begin();
         GitHubOrganization org = em.find(GitHubOrganization.class, 1L);
-        org.setUnsubscribeUsersFromOrg(true);
+        org.setUnsubscribeUsersFromOrg(enable);
         em.persist(org);
         em.getTransaction().commit();
-
-        verifyBatchletProcessing(true);
     }
 
     private void verifyBatchletProcessing(boolean removeFromOrg) throws Exception {

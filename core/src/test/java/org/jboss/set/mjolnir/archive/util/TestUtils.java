@@ -85,6 +85,29 @@ public final class TestUtils {
                 .willReturn(aResponse()
                         .withStatus(204)));
 
+        stubFor(get(urlPathEqualTo("/api/v3/orgs/testorg/members"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody(readSampleResponse("responses/gh-orgs-testorg-members-response.json"))));
+
+        stubFor(get(urlPathEqualTo("/api/v3/orgs/testorg/team/1/members"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody(readSampleResponse("responses/gh-orgs-team-1-members-response.json"))));
+
+        stubFor(get(urlPathEqualTo("/api/v3/orgs/testorg/team/2/members"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody(readSampleResponse("responses/gh-orgs-team-2-members-response.json"))));
+
+        stubFor(get(urlPathEqualTo("/api/v3/orgs/testorg/team/3/members"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody(readSampleResponse("responses/empty-list-response.json"))));
     }
 
     public static String readSampleResponse(String responseFileName) throws URISyntaxException, IOException {
