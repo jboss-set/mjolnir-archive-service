@@ -32,7 +32,8 @@ create sequence sq_github_orgs;
 create table github_orgs (
     id bigint default nextval('sq_github_orgs') primary key,
     name varchar(255) unique,
-    unsubscribe_users_from_org boolean default false
+    unsubscribe_users_from_org boolean default false,
+    subscriptions_enabled boolean default true
 );
 
 create sequence sq_github_teams;

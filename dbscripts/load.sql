@@ -1,4 +1,4 @@
-insert into github_orgs values (1, 'testorg', true);
+insert into github_orgs values (1, 'testorg', true, true);
 
 insert into github_teams values (1, 1, 'Team 1', 1);
 insert into github_teams values (2, 1, 'Team 2', 2);
