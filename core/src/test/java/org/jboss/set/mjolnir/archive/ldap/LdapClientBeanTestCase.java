@@ -19,13 +19,13 @@ import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class LdapDiscoveryBeanTestCase {
+public class LdapClientBeanTestCase {
 
     private final Configuration configuration = new Configuration.ConfigurationBuilder()
             .setLdapSearchContext("context")
             .build();
     private final LdapClient ldapClientMock = Mockito.mock(LdapClient.class);
-    private final LdapDiscoveryBean ldapDiscoveryBean = new LdapDiscoveryBean(configuration, ldapClientMock);
+    private final LdapClientBean ldapClientBean = new LdapClientBean(configuration, ldapClientMock);
 
     private final ArgumentCaptor<String> baseCaptor = ArgumentCaptor.forClass(String.class);
     private final ArgumentCaptor<String> filterCaptor = ArgumentCaptor.forClass(String.class);
@@ -35,7 +35,7 @@ public class LdapDiscoveryBeanTestCase {
         Mockito.when(ldapClientMock.search(Mockito.anyString(), Mockito.anyString()))
                 .thenReturn(new ResultEnumeration(Collections.emptyIterator()));
 
-        assertThat(ldapDiscoveryBean.checkUserExists("tom")).isFalse();
+        assertThat(ldapClientBean.checkUserExists("tom")).isFalse();
 
         Mockito.verify(ldapClientMock).search(baseCaptor.capture(), filterCaptor.capture());
         assertThat(baseCaptor.getValue()).isEqualTo("context");
@@ -61,7 +61,7 @@ public class LdapDiscoveryBeanTestCase {
         ldapNames.add("james"); // using prior uid instead of current uid
         ldapNames.add("tom");
 
-        Map<String, Boolean> existingUsersMap = ldapDiscoveryBean.checkUsersExists(ldapNames);
+        Map<String, Boolean> existingUsersMap = ldapClientBean.checkUsersExists(ldapNames);
 
         // verify resulting map
         assertThat(existingUsersMap.get("alice")).isTrue();

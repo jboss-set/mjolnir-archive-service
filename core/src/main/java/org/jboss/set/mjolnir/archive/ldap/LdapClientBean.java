@@ -9,17 +9,17 @@ import javax.naming.NamingException;
 import javax.naming.directory.Attribute;
 import javax.naming.directory.SearchResult;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * Provides querying of LDAP directory server.
  */
-public class LdapDiscoveryBean {
+public class LdapClientBean {
 
     private static final int GROUPING_FACTOR = 50; // query for that many users at a time
 
@@ -29,10 +29,10 @@ public class LdapDiscoveryBean {
     private LdapClient ldapClient;
 
     @SuppressWarnings("unused")
-    public LdapDiscoveryBean() {
+    public LdapClientBean() {
     }
 
-    LdapDiscoveryBean(Configuration configuration, LdapClient ldapClient) {
+    LdapClientBean(Configuration configuration, LdapClient ldapClient) {
         this.configuration = configuration;
         this.ldapClient = ldapClient;
     }
@@ -103,7 +103,7 @@ public class LdapDiscoveryBean {
      * @param users list of users to check
      * @return map where keys are UIDs and values are booleans indicating if given UID exists or not
      */
-    public Map<String, Boolean> checkUsersExists(Set<String> users) throws NamingException {
+    public Map<String, Boolean> checkUsersExists(Collection<String> users) throws NamingException {
         final Map<String, Boolean> result = new HashMap<>();
         final Iterator<String> iterator = users.iterator();
         final List<String> tempUserList = new ArrayList<>(GROUPING_FACTOR);

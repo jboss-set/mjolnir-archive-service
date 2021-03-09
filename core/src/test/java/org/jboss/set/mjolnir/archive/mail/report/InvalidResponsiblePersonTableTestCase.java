@@ -4,7 +4,7 @@ import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import org.apache.deltaspike.core.util.ArraysUtils;
 import org.apache.deltaspike.testcontrol.api.junit.CdiTestRunner;
 import org.jboss.set.mjolnir.archive.domain.RegisteredUser;
-import org.jboss.set.mjolnir.archive.ldap.LdapDiscoveryBean;
+import org.jboss.set.mjolnir.archive.ldap.LdapClientBean;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
@@ -36,7 +36,7 @@ public class InvalidResponsiblePersonTableTestCase {
     private InvalidResponsiblePersonTable invalidResponsiblePersonTable;
 
     @Inject
-    private LdapDiscoveryBean ldapDiscoveryBeanMock;
+    private LdapClientBean ldapClientBeanMock;
 
     @Before
     public void setup() throws NamingException {
@@ -45,7 +45,7 @@ public class InvalidResponsiblePersonTableTestCase {
         ldapUsersMap.put("Responsible guy", false);
         ldapUsersMap.put("Responsible guy1", false);
         ldapUsersMap.put("ben", true);
-        doReturn(ldapUsersMap).when(ldapDiscoveryBeanMock).checkUsersExists(ArraysUtils.asSet("Responsible guy", "Responsible guy1", "ben"));
+        doReturn(ldapUsersMap).when(ldapClientBeanMock).checkUsersExists(ArraysUtils.asSet("Responsible guy", "Responsible guy1", "ben"));
         em.getTransaction().begin();
 
         RegisteredUser registeredUser = new RegisteredUser();

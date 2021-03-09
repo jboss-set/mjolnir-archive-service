@@ -1,18 +1,19 @@
 package org.jboss.set.mjolnir.archive.mail.report;
 
 import com.github.tomakehurst.wiremock.junit.WireMockRule;
-import org.apache.deltaspike.core.util.ArraysUtils;
 import org.apache.deltaspike.testcontrol.api.junit.CdiTestRunner;
 import org.jboss.set.mjolnir.archive.domain.RegisteredUser;
-import org.jboss.set.mjolnir.archive.ldap.LdapDiscoveryBean;
-import org.jboss.set.mjolnir.archive.ldap.LdapScanningBean;
+import org.jboss.set.mjolnir.archive.ldap.LdapClientBean;
+import org.jboss.set.mjolnir.archive.UserDiscoveryBean;
+import org.jboss.set.mjolnir.archive.util.MockitoAnswers;
+import org.jboss.set.mjolnir.archive.util.TestUtils;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
-import org.jsoup.select.Elements;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.Mockito;
 
 import javax.inject.Inject;
 import javax.naming.NamingException;
@@ -20,16 +21,11 @@ import javax.persistence.EntityManager;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Collection;
 import java.util.List;
 
-import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
-import static com.github.tomakehurst.wiremock.client.WireMock.get;
-import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
-import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.jboss.set.mjolnir.archive.util.TestUtils.readSampleResponse;
-import static org.mockito.Mockito.doReturn;
+import static org.mockito.ArgumentMatchers.anyCollection;
 
 @RunWith(CdiTestRunner.class)
 public class UsersWithoutLdapReportTableTestCase {
@@ -41,38 +37,21 @@ public class UsersWithoutLdapReportTableTestCase {
     private EntityManager em;
 
     @Inject
-    private LdapScanningBean ldapScanningBean;
+    private UserDiscoveryBean userDiscoveryBean;
 
     @Inject
-    private LdapDiscoveryBean ldapDiscoveryBeanMock;
+    private LdapClientBean ldapClientBeanMock;
 
     @Inject
     private UsersWithoutLdapReportTable usersWithoutLdapReportTable;
 
     @Before
     public void setup() throws IOException, URISyntaxException, NamingException {
-        stubFor(get(urlPathEqualTo("/api/v3/orgs/testorg/team/1/members"))
-                .willReturn(aResponse()
-                        .withStatus(200)
-                        .withHeader("Content-Type", "application/json")
-                        .withBody(readSampleResponse("responses/gh-orgs-team-1-members-response.json"))));
+        TestUtils.setupGitHubApiStubs();
 
-        stubFor(get(urlPathEqualTo("/api/v3/orgs/testorg/team/2/members"))
-                .willReturn(aResponse()
-                        .withStatus(200)
-                        .withHeader("Content-Type", "application/json")
-                        .withBody(readSampleResponse("responses/gh-orgs-team-2-members-response.json"))));
-
-        stubFor(get(urlPathEqualTo("/api/v3/orgs/testorg/team/3/members"))
-                .willReturn(aResponse()
-                        .withStatus(200)
-                        .withHeader("Content-Type", "application/json")
-                        .withBody(readSampleResponse("responses/empty-list-response.json"))));
-
-        HashMap<Object, Object> ldapUsersMap = new HashMap<>();
-        ldapUsersMap.put("ben", false);
-        ldapUsersMap.put("bob", false);
-        doReturn(ldapUsersMap).when(ldapDiscoveryBeanMock).checkUsersExists(ArraysUtils.asSet("ben", "bob"));
+        Mockito.reset(ldapClientBeanMock);
+        Mockito.when(ldapClientBeanMock.checkUsersExists(anyCollection()))
+                .thenAnswer(new MockitoAnswers.UsersNotInLdapAnswer());
 
         em.getTransaction().begin();
 
@@ -93,7 +72,7 @@ public class UsersWithoutLdapReportTableTestCase {
 
     @Test
     public void testComposeTableBody() throws IOException, NamingException {
-        List<String> users = ldapScanningBean.getUsersWithoutLdapAccount();
+        Collection<String> users = userDiscoveryBean.findAllUsersWithoutLdapAccount();
         assertThat(users).containsOnly("ben", "bob");
 
         List<String> usersList = new ArrayList<>(users);
@@ -102,17 +81,25 @@ public class UsersWithoutLdapReportTableTestCase {
         String messageBody = usersWithoutLdapReportTable.composeTable();
         Document doc = Jsoup.parse(messageBody);
 
-        assertThat(doc.select("tr").size()).isEqualTo(users.size() + 1);
-
-        Elements elements = doc.select("td");
-        assertThat(elements.size()).isEqualTo(users.size());
-
-        int i = 0;
-        for (String user : usersList) {
-            assertThat(user).isEqualTo(elements.get(i).childNode(0).toString());
-
-            i += 1;
-        }
+        assertThat(doc.select("tr")).satisfies(elements -> {
+            assertThat(elements.size()).isEqualTo(5);
+            assertThat(elements.get(1).html()).satisfies(text -> {
+                assertThat(text.contains("ben")).isTrue();
+                assertThat(text.contains("testorg")).isTrue();
+            });
+            assertThat(elements.get(2).html()).satisfies(text -> {
+                assertThat(text.contains("bob")).isTrue();
+                assertThat(text.contains("testorg")).isTrue();
+            });
+            assertThat(elements.get(3).html()).satisfies(text -> {
+                assertThat(text.contains("ben")).isTrue();
+                assertThat(text.contains("testorg/Team 2")).isTrue();
+            });
+            assertThat(elements.get(4).html()).satisfies(text -> {
+                assertThat(text.contains("bob")).isTrue();
+                assertThat(text.contains("testorg/Team 1")).isTrue();
+            });
+        });
     }
 
 }

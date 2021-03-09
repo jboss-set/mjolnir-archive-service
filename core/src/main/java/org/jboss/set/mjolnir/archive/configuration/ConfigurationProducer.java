@@ -5,7 +5,6 @@ import org.jboss.logging.Logger;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.Produces;
-import javax.inject.Inject;
 import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -27,14 +26,11 @@ public class ConfigurationProducer {
     private final static String REMOVE_ARCHIVES = "application.remove_archives";
     private final static String REMOVE_ARCHIVES_AFTER= "application.remove_archives_after";
 
-    private Logger logger = Logger.getLogger(getClass());
-
-    @Inject
-    private DataSource dataSource;
+    private final Logger logger = Logger.getLogger(getClass());
 
     @Produces
     @ApplicationScoped
-    public Configuration createConfiguration() {
+    public Configuration createConfiguration(DataSource dataSource) {
         try (Connection connection = dataSource.getConnection()) {
             PreparedStatement stmt = connection.prepareStatement("select param_name, param_value from application_parameters");
             ResultSet resultSet = stmt.executeQuery();

@@ -14,12 +14,12 @@ import java.util.stream.Collectors;
 /**
  * Provides discovery of user repositories.
  */
-public class GitHubDiscoveryBean {
+public class GitHubRepositoriesBean {
 
     final private RepositoryService repositoryService;
 
     @Inject
-    public GitHubDiscoveryBean(GitHubClient client) {
+    public GitHubRepositoriesBean(GitHubClient client) {
         repositoryService = new RepositoryService(client);
     }
 

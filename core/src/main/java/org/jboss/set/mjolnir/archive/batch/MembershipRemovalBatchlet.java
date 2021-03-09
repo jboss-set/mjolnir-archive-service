@@ -13,8 +13,8 @@ import org.jboss.set.mjolnir.archive.domain.RepositoryFork;
 import org.jboss.set.mjolnir.archive.domain.RepositoryForkStatus;
 import org.jboss.set.mjolnir.archive.domain.UserRemoval;
 import org.jboss.set.mjolnir.archive.domain.repositories.RemovalLogRepositoryBean;
-import org.jboss.set.mjolnir.archive.github.GitHubDiscoveryBean;
-import org.jboss.set.mjolnir.archive.github.GitHubTeamServiceBean;
+import org.jboss.set.mjolnir.archive.github.GitHubRepositoriesBean;
+import org.jboss.set.mjolnir.archive.github.GitHubMembershipBean;
 
 import javax.batch.api.AbstractBatchlet;
 import javax.inject.Inject;
@@ -46,13 +46,13 @@ public class MembershipRemovalBatchlet extends AbstractBatchlet {
     private Configuration configuration;
 
     @Inject
-    private GitHubDiscoveryBean discoveryBean;
+    private GitHubRepositoriesBean discoveryBean;
 
     @Inject
     private ArchivingBean archivingBean;
 
     @Inject
-    private GitHubTeamServiceBean teamServiceBean;
+    private GitHubMembershipBean teamServiceBean;
 
     @Inject
     private RemovalLogRepositoryBean logRepositoryBean;
@@ -170,55 +170,11 @@ public class MembershipRemovalBatchlet extends AbstractBatchlet {
         List<GitHubOrganization> organizations = loadOrganizations();
 
         for (GitHubOrganization organization : organizations) {
-
-            // find user's repositories
-
-            Set<Repository> repositoriesToArchive;
+            // archive user repositories
             try {
-                logger.infof("Looking for repositories belonging to user %s that are forks of organization %s repositories.",
-                        gitHubUsername, organization.getName());
-                repositoriesToArchive = discoveryBean.getRepositoriesToArchive(organization.getName(), gitHubUsername);
-                logger.infof("Found following repositories to archive: %s",
-                        repositoriesToArchive.stream().map(Repository::generateId).collect(Collectors.toList()));
-            } catch (IOException e) {
-                logRepositoryBean.logError(removal, "Couldn't obtain repositories for user " + gitHubUsername, e);
-
-                removal.setStatus(RemovalStatus.FAILED);
-                em.persist(removal);
-
+                archiveUserRepositories(removal, organization, gitHubUsername);
+            } catch (Exception e) {
                 return false;
-            }
-
-            // archive repositories
-
-            for (Repository repository : repositoriesToArchive) {
-
-                // persist repository record
-
-                RepositoryFork repositoryFork = createRepositoryFork(repository);
-                repositoryFork.setUserRemoval(removal);
-                em.persist(repositoryFork);
-
-
-                // archive
-
-                logger.infof("Archiving repository %s", repository.generateId());
-                try {
-                    archivingBean.createRepositoryMirror(repository);
-
-                    repositoryFork.setStatus(RepositoryForkStatus.ARCHIVED);
-                    em.persist(repositoryFork);
-                } catch (Exception e) {
-                    logRepositoryBean.logError(removal, "Couldn't archive repository: " + repository.getCloneUrl(), e);
-
-                    repositoryFork.setStatus(RepositoryForkStatus.ARCHIVAL_FAILED);
-                    em.persist(repositoryFork);
-
-                    removal.setStatus(RemovalStatus.FAILED);
-                    em.persist(removal);
-
-                    return false;
-                }
             }
 
             // remove team memberships
@@ -227,6 +183,9 @@ public class MembershipRemovalBatchlet extends AbstractBatchlet {
             if (configuration.isUnsubscribeUsers()) {
                 try {
                     teamServiceBean.removeUserFromTeams(organization, gitHubUsername);
+                    if (organization.isUnsubscribeUsersFromOrg()) {
+                        teamServiceBean.removeUserFromOrganization(organization, gitHubUsername);
+                    }
                 } catch (IOException e) {
                     logRepositoryBean.logError(removal, "Couldn't remove user membership from GitHub teams: " + gitHubUsername, e);
 
@@ -244,6 +203,57 @@ public class MembershipRemovalBatchlet extends AbstractBatchlet {
         em.persist(removal);
         logger.infof("Removal batchlet completed successfully.");
         return true;
+    }
+
+    private void archiveUserRepositories(UserRemoval removal, GitHubOrganization organization, String gitHubUsername)
+            throws Exception {
+
+        // find user's repositories
+
+        Set<Repository> repositoriesToArchive;
+        try {
+            logger.infof("Looking for repositories belonging to user %s that are forks of organization %s repositories.",
+                    gitHubUsername, organization.getName());
+            repositoriesToArchive = discoveryBean.getRepositoriesToArchive(organization.getName(), gitHubUsername);
+            logger.infof("Found following repositories to archive: %s",
+                    repositoriesToArchive.stream().map(Repository::generateId).collect(Collectors.toList()));
+        } catch (IOException e) {
+            logRepositoryBean.logError(removal, "Couldn't obtain repositories for user " + gitHubUsername, e);
+
+            removal.setStatus(RemovalStatus.FAILED);
+            em.persist(removal);
+
+            throw e;
+        }
+
+        // archive repositories
+
+        for (Repository repository : repositoriesToArchive) {
+
+            // persist repository record
+            RepositoryFork repositoryFork = createRepositoryFork(repository);
+            repositoryFork.setUserRemoval(removal);
+            em.persist(repositoryFork);
+
+            // archive
+            logger.infof("Archiving repository %s", repository.generateId());
+            try {
+                archivingBean.createRepositoryMirror(repository);
+
+                repositoryFork.setStatus(RepositoryForkStatus.ARCHIVED);
+                em.persist(repositoryFork);
+            } catch (Exception e) {
+                logRepositoryBean.logError(removal, "Couldn't archive repository: " + repository.getCloneUrl(), e);
+
+                repositoryFork.setStatus(RepositoryForkStatus.ARCHIVAL_FAILED);
+                em.persist(repositoryFork);
+
+                removal.setStatus(RemovalStatus.FAILED);
+                em.persist(removal);
+
+                throw e;
+            }
+        }
     }
 
     static RepositoryFork createRepositoryFork(Repository repository) {

@@ -4,7 +4,7 @@ import j2html.tags.DomContent;
 import org.apache.commons.lang3.StringUtils;
 import org.jboss.set.mjolnir.archive.domain.RegisteredUser;
 import org.jboss.set.mjolnir.archive.domain.repositories.RegisteredUserRepositoryBean;
-import org.jboss.set.mjolnir.archive.ldap.LdapDiscoveryBean;
+import org.jboss.set.mjolnir.archive.ldap.LdapClientBean;
 
 import javax.inject.Inject;
 import javax.naming.NamingException;
@@ -24,12 +24,16 @@ import static j2html.TagCreator.td;
 import static j2html.TagCreator.th;
 import static j2html.TagCreator.tr;
 
+/**
+ * Prints a list of registered users with an invalid responsible person - i.e. their responsible person is not an existing
+ * LDAP username.
+ */
 public class InvalidResponsiblePersonTable implements ReportTable {
 
     private static final String REPORT_TABLE_TITLE = "Invalid Responsible Persons";
 
     @Inject
-    private LdapDiscoveryBean ldapDiscoveryBean;
+    private LdapClientBean ldapClientBean;
 
     @Inject
     private RegisteredUserRepositoryBean userRepositoryBean;
@@ -38,7 +42,9 @@ public class InvalidResponsiblePersonTable implements ReportTable {
     public String composeTable() throws NamingException {
         return div().with(
                 h2(REPORT_TABLE_TITLE).withStyle(Styles.H2_STYLE),
-                p("Responsible person is not an LDAP name of an existing user.").withStyle(Styles.SUB_HEADING_STYLE),
+                p("Responsible person is not an LDAP name of an existing user. " +
+                        "This table should remain empty.")
+                        .withStyle(Styles.SUB_HEADING_STYLE),
                 table().withStyle(Styles.TABLE_STYLE + Styles.TD_STYLE).with(
                         tr().with(
                                 th(Constants.LDAP_NAME).withStyle(Styles.TH_STYLE),
@@ -65,7 +71,7 @@ public class InvalidResponsiblePersonTable implements ReportTable {
                 .filter(StringUtils::isNoneBlank)
                 .collect(Collectors.toSet());
 
-        Map<String, Boolean> userLdapMap = ldapDiscoveryBean.checkUsersExists(setOfResponsiblePersons);
+        Map<String, Boolean> userLdapMap = ldapClientBean.checkUsersExists(setOfResponsiblePersons);
 
         List<String> invalidResponsiblePersons = userLdapMap.entrySet().stream()
                 .filter(entry -> !entry.getValue())

@@ -1,8 +1,8 @@
 package org.jboss.set.mjolnir.archive.mail.report;
 
 import j2html.tags.DomContent;
+import org.jboss.set.mjolnir.archive.UserDiscoveryBean;
 import org.jboss.set.mjolnir.archive.domain.RegisteredUser;
-import org.jboss.set.mjolnir.archive.ldap.LdapScanningBean;
 
 import javax.inject.Inject;
 import java.util.Comparator;
@@ -21,7 +21,7 @@ public class WhitelistedUsersReportTable implements ReportTable {
     private static final String REPORT_TABLE_TITLE = "Whitelisted Users";
 
     @Inject
-    LdapScanningBean ldapScanningBean;
+    UserDiscoveryBean userDiscoveryBean;
 
     @Override
     public String composeTable() {
@@ -47,7 +47,7 @@ public class WhitelistedUsersReportTable implements ReportTable {
     }
 
     private List<RegisteredUser> getWhitelistedUsers() {
-        return ldapScanningBean.getWhitelistedUsers();
+        return userDiscoveryBean.getWhitelistedUsers();
     }
 
     static class GitHubNameComparator implements Comparator<RegisteredUser> {

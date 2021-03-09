@@ -1,10 +1,9 @@
 package org.jboss.mjolnir.archive.service.webapp.servlet;
 
-import org.jboss.set.mjolnir.archive.ldap.LdapScanningBean;
+import org.jboss.set.mjolnir.archive.UserDiscoveryBean;
 
 import javax.inject.Inject;
 import javax.servlet.ServletException;
-import javax.servlet.ServletOutputStream;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -19,11 +18,11 @@ import java.io.PrintWriter;
 public class LdapScanningServlet extends HttpServlet {
 
     @Inject
-    private LdapScanningBean ldapScanningBean;
+    private UserDiscoveryBean userDiscoveryBean;
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        ldapScanningBean.createRemovalsForUsersWithoutLdapAccount();
+        userDiscoveryBean.createRemovalsForUsersWithoutLdapAccount();
 
         resp.setContentType("text/plain");
         try (PrintWriter writer = resp.getWriter()) {
