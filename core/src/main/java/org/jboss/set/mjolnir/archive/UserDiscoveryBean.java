@@ -87,12 +87,14 @@ public class UserDiscoveryBean {
     public Collection<String> findAllUsersWithoutLdapAccount() throws IOException, NamingException {
         // collect members of all teams and organizations
         HashMap<String, List<GitHubTeam>> allTeamsMembers = getAllTeamsMembers();
+        logger.infof("Found %d members of all monitored teams.", allTeamsMembers.size());
         HashMap<String, List<GitHubOrganization>> allOrganizationsMembers = getAllOrganizationsMembers();
+        logger.infof("Found %d members of all monitored organizations.", allOrganizationsMembers.size());
 
         HashSet<String> githubUsernames = new HashSet<>();
         githubUsernames.addAll(allTeamsMembers.keySet());
         githubUsernames.addAll(allOrganizationsMembers.keySet());
-        logger.infof("Found %d members of all organizations teams.", githubUsernames.size());
+        logger.infof("Found %d members of all monitored organizations and teams.", githubUsernames.size());
 
         return findUsersWithoutLdapAccount(githubUsernames).values();
     }
@@ -177,7 +179,10 @@ public class UserDiscoveryBean {
         HashMap<String, List<GitHubTeam>> usersMap = new HashMap<>();
         for (GitHubOrganization organization : organizations) {
             for (GitHubTeam team: organization.getTeams()) {
-                for (User user: gitHubMembershipBean.getTeamsMembers(team)) {
+                List<User> teamMembers = gitHubMembershipBean.getTeamsMembers(team);
+                logger.infof("Discovered %d members of team %s",
+                        teamMembers.size(), team.getOrganization().getName() + " / " + team.getName());
+                for (User user: teamMembers) {
                     List<GitHubTeam> usersTeams = usersMap.computeIfAbsent(user.getLogin(), u -> new ArrayList<>());
                     usersTeams.add(team);
                 }
@@ -199,7 +204,10 @@ public class UserDiscoveryBean {
         HashMap<String, List<GitHubOrganization>> usersMap = new HashMap<>();
         for (GitHubOrganization organization : organizations) {
             if (organization.isUnsubscribeUsersFromOrg()) {
-                for (User user: gitHubMembershipBean.getOrganizationMembers(organization)) {
+                Collection<User> organizationMembers = gitHubMembershipBean.getOrganizationMembers(organization);
+                logger.infof("Discovered %d members of organization %s",
+                        organizationMembers.size(), organization.getName());
+                for (User user: organizationMembers) {
                     List<GitHubOrganization> usersOrgs = usersMap.computeIfAbsent(user.getLogin(), u -> new ArrayList<>());
                     usersOrgs.add(organization);
                 }
