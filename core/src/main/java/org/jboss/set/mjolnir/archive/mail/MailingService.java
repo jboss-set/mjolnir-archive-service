@@ -1,7 +1,7 @@
 package org.jboss.set.mjolnir.archive.mail;
 
 import javax.annotation.Resource;
-import javax.faces.bean.ApplicationScoped;
+import javax.enterprise.context.ApplicationScoped;
 import javax.mail.Message;
 import javax.mail.MessagingException;
 import javax.mail.Session;

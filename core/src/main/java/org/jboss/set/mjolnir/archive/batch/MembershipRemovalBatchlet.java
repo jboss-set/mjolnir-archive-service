@@ -86,8 +86,10 @@ public class MembershipRemovalBatchlet extends AbstractBatchlet {
         transaction.commit();
 
         if (successful) {
+            logger.infof("Removal batchlet completed successfully.");
             return Constants.DONE;
         } else {
+            logger.infof("Removal batchlet completed with errors.");
             return Constants.DONE_WITH_ERRORS;
         }
     }
@@ -178,7 +180,7 @@ public class MembershipRemovalBatchlet extends AbstractBatchlet {
             }
 
             // remove team memberships
-            logger.infof("User is about to be removed from following teams: %s",
+            logger.infof("Removing user %s from following teams: %s", gitHubUsername,
                     organization.getTeams().stream().map(GitHubTeam::getName).collect(Collectors.joining(", ")));
             if (configuration.isUnsubscribeUsers()) {
                 try {
@@ -201,7 +203,6 @@ public class MembershipRemovalBatchlet extends AbstractBatchlet {
 
         removal.setStatus(RemovalStatus.COMPLETED);
         em.persist(removal);
-        logger.infof("Removal batchlet completed successfully.");
         return true;
     }
 

@@ -64,9 +64,9 @@ public class ReportScheduler {
 
         List<ReportTable> reportTables = new ArrayList<>();
         reportTables.add(removalsReportTable);
+        reportTables.add(unregisteredMembersReportTable);
         reportTables.add(usersWithoutLdapReportTable);
         reportTables.add(whitelistedUsersReportTable);
-        reportTables.add(unregisteredMembersReportTable);
         reportTables.add(invalidUserId);
 
         String body = mailBodyMessageProducer.composeMessageBody(reportTables);
