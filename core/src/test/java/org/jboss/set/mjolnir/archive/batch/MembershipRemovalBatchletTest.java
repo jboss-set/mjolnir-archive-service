@@ -49,13 +49,14 @@ public class MembershipRemovalBatchletTest {
     public void setup() {
         Mockito.reset(archivingBeanMock);
 
-        // create sample removals
-
         em.getTransaction().begin();
 
+        // clear tables before each test
         em.createNativeQuery("delete from repository_forks").executeUpdate();
         em.createNativeQuery("delete from user_removals").executeUpdate();
         em.clear();
+
+        // create sample removals
 
         UserRemoval userRemoval = new UserRemoval();
         userRemoval.setLdapUsername("thofman");
@@ -117,16 +118,20 @@ public class MembershipRemovalBatchletTest {
 
     @Test
     public void testBatchlet() throws Exception {
-        setUnsubscribeFromOrganization(false);
         verifyBatchletProcessing(false);
     }
 
     @Test
     public void testBatchlet_removeFromOrg() throws Exception {
-        setUnsubscribeFromOrganization(true);
         verifyBatchletProcessing(true);
     }
 
+    /**
+     * Updates a configuration of a GitHub organization.
+     *
+     * @param enable true - users are supposed be unsubscribed from the org,
+     *               false - user are supposed to be unsubscribed from teams only
+     */
     private void setUnsubscribeFromOrganization(boolean enable) {
         em.getTransaction().begin();
         GitHubOrganization org = em.find(GitHubOrganization.class, 1L);
@@ -135,9 +140,27 @@ public class MembershipRemovalBatchletTest {
         em.getTransaction().commit();
     }
 
+    /**
+     * This tests the overall functionality of the MembershipRemovalBatchlet.
+     * <p>
+     * Test verifies that:
+     *
+     * <li>all removals older than defined limit were processed and were marked as processed,</li>
+     * <li>status of processed removals is COMPLETED,</li>
+     * <li>archived repositories were recorded in the repository_forks table,</li>
+     * <li>expected calls to ArchivingBean were made,</li>
+     * <li>expected calls to GitHub API were made.</li>
+     *
+     * @param removeFromOrg true - test scenario where users are supposed be unsubscribed from the org,
+     *                      false - test scenario where users are supposed to be unsubscribed from teams only
+     */
     private void verifyBatchletProcessing(boolean removeFromOrg) throws Exception {
+        // configure if users should be unsubscribed from org
+        setUnsubscribeFromOrganization(removeFromOrg);
+        // configure GH API stubs
         TestUtils.setupGitHubApiStubs();
 
+        // run the batchlet
         String result = batchlet.process();
         em.clear();
         assertThat(result).isEqualTo("DONE");
