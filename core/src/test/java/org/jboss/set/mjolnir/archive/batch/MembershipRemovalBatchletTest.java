@@ -8,6 +8,9 @@ import org.eclipse.egit.github.core.Repository;
 import org.jboss.set.mjolnir.archive.ArchivingBean;
 import org.jboss.set.mjolnir.archive.domain.GitHubOrganization;
 import org.jboss.set.mjolnir.archive.domain.RemovalStatus;
+import org.jboss.set.mjolnir.archive.domain.UnsubscribeStatus;
+import org.jboss.set.mjolnir.archive.domain.UnsubscribedUserFromOrg;
+import org.jboss.set.mjolnir.archive.domain.UnsubscribedUserFromTeam;
 import org.jboss.set.mjolnir.archive.domain.UserRemoval;
 import org.jboss.set.mjolnir.archive.util.TestUtils;
 import org.junit.Before;
@@ -54,6 +57,8 @@ public class MembershipRemovalBatchletTest {
         em.getTransaction().begin();
 
         em.createNativeQuery("delete from repository_forks").executeUpdate();
+        em.createNativeQuery("delete from unsubscribed_users_from_orgs").executeUpdate();
+        em.createNativeQuery("delete from unsubscribed_users_from_teams").executeUpdate();
         em.createNativeQuery("delete from user_removals").executeUpdate();
         em.clear();
 
@@ -218,6 +223,53 @@ public class MembershipRemovalBatchletTest {
             WireMock.verify(0, getRequestedFor(urlEqualTo("/api/v3/orgs/testorg/members/TomasHofman")));
             WireMock.verify(0, deleteRequestedFor(urlEqualTo("/api/v3/orgs/testorg/members/TomasHofman")));
         }
+    }
+    
+    @Test
+    public void testProcessRemoval_auditLog() throws Exception {
+        // configure that users should be unsubscribed from testorg
+        setUnsubscribeFromOrganization(true);
+        // configure GH API stubs
+        TestUtils.setupGitHubApiStubs();
+
+        // get a single removal to process
+        UserRemoval removal = em.createQuery("select r from UserRemoval r where ldapUsername = 'thofman'", UserRemoval.class)
+                .getSingleResult();
+        assertThat(removal.getStatus()).isNull();
+
+        // the #processRemoval() method doesn't open a transaction by itself, so need to do it here
+        em.getTransaction().begin();
+
+        // let the removal be processed
+        batchlet.processRemoval(removal);
+        em.getTransaction().commit();
+
+        // verify the processing ended successfully
+        em.refresh(removal);
+        assertThat(removal.getStatus()).isEqualTo(RemovalStatus.COMPLETED);
+
+        // verify audit log for unsubscribed orgs
+        List<UnsubscribedUserFromOrg> unsubscribedUsers =
+                em.createQuery("select u from UnsubscribedUserFromOrg u", UnsubscribedUserFromOrg.class)
+                        .getResultList();
+        assertThat(unsubscribedUsers).extracting("userRemoval.id", "githubUsername", "githubOrgName", "status")
+                .containsOnly(Tuple.tuple(removal.getId(), "TomasHofman", "testorg", UnsubscribeStatus.COMPLETED));
+
+        em.getTransaction().begin();
+
+        // let the removal be processed
+        batchlet.processRemoval(removal);
+        em.getTransaction().commit();
+
+        // verify the processing ended successfully
+        em.refresh(removal);
+
+        // verify audit log for unsubscribed teams
+        List<UnsubscribedUserFromTeam> unsubscribedUserFromTeam = em.createQuery("select u from UnsubscribedUserFromTeam u", UnsubscribedUserFromTeam.class)
+                .getResultList();
+        assertThat(unsubscribedUserFromTeam).extracting("userRemoval.id", "githubUsername","githubTeamName", "githubOrgName", "status")
+                .contains(Tuple.tuple(removal.getId(), "TomasHofman", "Team 1", "testorg", UnsubscribeStatus.COMPLETED));
+        
     }
 
 }

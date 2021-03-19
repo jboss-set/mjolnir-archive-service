@@ -33,21 +33,15 @@ public class GitHubMembershipBean {
     /**
      * Find teams for given organization filter ones in which user got membership and then removes users membership.
      *
-     * @param organization github organization
+     * @param gitHubTeam github team
      * @param gitHubUsername   github username
      */
-    public void removeUserFromTeams(GitHubOrganization organization, String gitHubUsername) throws IOException {
-        logger.infof("Removing user %s from organization %s teams", gitHubUsername, organization.getName());
-
-        List<GitHubTeam> teams = organization.getTeams();
-
-        for (GitHubTeam team : teams) {
-            if (isMember(gitHubUsername, team)) {
-                logger.infof("Removing membership of user %s in team %s", gitHubUsername, team.getName());
-                teamService.removeMember(team.getGithubId(), gitHubUsername);
-            } else {
-                logger.infof("User %s is not a member of team %s", gitHubUsername, team.getName());
-            }
+    public void removeUserFromTeam(GitHubTeam gitHubTeam, String gitHubUsername) throws IOException {
+        if (isMember(gitHubUsername, gitHubTeam)) {
+            logger.infof("Removing membership of user %s in team %s", gitHubUsername, gitHubTeam.getName());
+            teamService.removeMember(gitHubTeam.getGithubId(), gitHubUsername);
+        } else {
+            logger.infof("User %s is not a member of team %s", gitHubUsername, gitHubTeam.getName());
         }
     }
 

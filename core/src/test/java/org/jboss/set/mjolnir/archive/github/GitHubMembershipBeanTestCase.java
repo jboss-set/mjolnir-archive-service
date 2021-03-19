@@ -112,12 +112,12 @@ public class GitHubMembershipBeanTestCase {
     @Test
     public void testRemoveUsersFromTeam() throws Exception {
         GitHubMembershipBean bean = new GitHubMembershipBean(client);
-
-        bean.removeUserFromTeams(createOrganizationEntity(), "lvydra");
+        GitHubTeam team = new GitHubTeam();
+        team.setGithubId(1);
+        team.setName("Team 1");
+        bean.removeUserFromTeam(team, "lvydra");
 
         verify(deleteRequestedFor(urlEqualTo("/api/v3/teams/1/members/lvydra")));
-        verify(exactly(0), deleteRequestedFor(urlEqualTo("/api/v3/teams/2/members/lvydra")));
-        verify(deleteRequestedFor(urlEqualTo("/api/v3/teams/3/members/lvydra")));
     }
 
     @Test
