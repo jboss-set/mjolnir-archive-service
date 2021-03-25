@@ -11,10 +11,13 @@ import org.jboss.set.mjolnir.archive.domain.RegisteredUser;
 import org.jboss.set.mjolnir.archive.domain.RemovalStatus;
 import org.jboss.set.mjolnir.archive.domain.RepositoryFork;
 import org.jboss.set.mjolnir.archive.domain.RepositoryForkStatus;
+import org.jboss.set.mjolnir.archive.domain.UnsubscribeStatus;
+import org.jboss.set.mjolnir.archive.domain.UnsubscribedUserFromOrg;
+import org.jboss.set.mjolnir.archive.domain.UnsubscribedUserFromTeam;
 import org.jboss.set.mjolnir.archive.domain.UserRemoval;
 import org.jboss.set.mjolnir.archive.domain.repositories.RemovalLogRepositoryBean;
-import org.jboss.set.mjolnir.archive.github.GitHubRepositoriesBean;
 import org.jboss.set.mjolnir.archive.github.GitHubMembershipBean;
+import org.jboss.set.mjolnir.archive.github.GitHubRepositoriesBean;
 
 import javax.batch.api.AbstractBatchlet;
 import javax.inject.Inject;
@@ -56,7 +59,7 @@ public class MembershipRemovalBatchlet extends AbstractBatchlet {
 
     @Inject
     private RemovalLogRepositoryBean logRepositoryBean;
-
+    
     @Override
     public String process() {
         // obtain list of users we want to remove the access rights from
@@ -70,7 +73,14 @@ public class MembershipRemovalBatchlet extends AbstractBatchlet {
         boolean successful = true;
         for (UserRemoval removal : removals) {
             try {
-                successful &= processRemoval(removal);
+                logger.infof("Processing removal #%d", removal.getId());
+                RemovalStatus removalStatus = processRemoval(removal);
+
+                logger.infof("Status of removal #%d is %s", removal.getId(), removalStatus.name());
+                removal.setStatus(removalStatus);
+                em.persist(removal);
+
+                successful &= RemovalStatus.COMPLETED.equals(removalStatus);
             } catch (Exception e) {
                 successful = false;
                 
@@ -137,14 +147,12 @@ public class MembershipRemovalBatchlet extends AbstractBatchlet {
      * @param removal removal to process
      * @return processed successfully?
      */
-    boolean processRemoval(UserRemoval removal) {
+    RemovalStatus processRemoval(UserRemoval removal) {
 
         // validate that either ldap username or github username is specified
         if (StringUtils.isBlank(removal.getGithubUsername()) && StringUtils.isBlank(removal.getLdapUsername())) {
-            logger.warnf("Ignoring removal #%d, neither GitHub username or LDAP username were specified.", removal.getId());
-            removal.setStatus(RemovalStatus.INVALID);
-            em.persist(removal);
-            return false;
+            logRepositoryBean.logMessage(removal, String.format("Ignoring removal #%d, neither GitHub username or LDAP username were specified.", removal.getId()));
+            return RemovalStatus.INVALID;
         }
 
         // determine user's github username
@@ -157,10 +165,7 @@ public class MembershipRemovalBatchlet extends AbstractBatchlet {
             gitHubUsername = findGitHubUsername(removal.getLdapUsername());
             if (gitHubUsername == null) {
                 logRepositoryBean.logMessage(removal, "Ignoring removal request for user " + removal.getLdapUsername());
-
-                removal.setStatus(RemovalStatus.UNKNOWN_USER);
-                em.persist(removal);
-                return true;
+                return RemovalStatus.UNKNOWN_USER;
             }
             logger.infof("Processing removal of LDAP user %s, GitHub username %s",
                     removal.getLdapUsername(), gitHubUsername);
@@ -176,34 +181,44 @@ public class MembershipRemovalBatchlet extends AbstractBatchlet {
             try {
                 archiveUserRepositories(removal, organization, gitHubUsername);
             } catch (Exception e) {
-                return false;
+                logRepositoryBean.logError(removal, "Couldn't archive repositories of user " + gitHubUsername, e);
+                return RemovalStatus.FAILED;
             }
 
-            // remove team memberships
-            logger.infof("Removing user %s from following teams: %s", gitHubUsername,
-                    organization.getTeams().stream().map(GitHubTeam::getName).collect(Collectors.joining(", ")));
+            // if this is enabled in app configuration, unsubscribe user on github
             if (configuration.isUnsubscribeUsers()) {
-                try {
-                    teamServiceBean.removeUserFromTeams(organization, gitHubUsername);
-                    if (organization.isUnsubscribeUsersFromOrg()) {
-                        teamServiceBean.removeUserFromOrganization(organization, gitHubUsername);
+                logger.infof("Removing user %s from following teams: %s", gitHubUsername,
+                        organization.getTeams().stream().map(GitHubTeam::getName).collect(Collectors.joining(", ")));
+
+                // remove team memberships
+                for (GitHubTeam team : organization.getTeams()) {
+                    try {
+                        teamServiceBean.removeUserFromTeam(team, gitHubUsername);
+                        logUnsubscribedTeam(removal, gitHubUsername, team, UnsubscribeStatus.COMPLETED);
+                    } catch (IOException e) {
+                        logRepositoryBean.logError(removal, "Couldn't remove user membership from GitHub teams: " + gitHubUsername, e);
+                        logUnsubscribedTeam(removal, gitHubUsername, team, UnsubscribeStatus.FAILED);
+                        return RemovalStatus.FAILED;
                     }
-                } catch (IOException e) {
-                    logRepositoryBean.logError(removal, "Couldn't remove user membership from GitHub teams: " + gitHubUsername, e);
+                }
 
-                    removal.setStatus(RemovalStatus.FAILED);
-                    em.persist(removal);
-
-                    return false;
+                // if this is enabled for given organization, remove organization membership
+                if (organization.isUnsubscribeUsersFromOrg()) {
+                    try {
+                        teamServiceBean.removeUserFromOrganization(organization, gitHubUsername);
+                        logUnsubscribedOrg(removal, gitHubUsername, organization, UnsubscribeStatus.COMPLETED);
+                    } catch (IOException e) {
+                        logRepositoryBean.logError(removal, "Couldn't remove user membership from GitHub organization: " + gitHubUsername, e);
+                        logUnsubscribedOrg(removal, gitHubUsername, organization, UnsubscribeStatus.FAILED);
+                        return RemovalStatus.FAILED;
+                    }
                 }
             } else {
                 logger.infof("Membership removal is disabled, membership has not been removed.", gitHubUsername);
             }
         }
 
-        removal.setStatus(RemovalStatus.COMPLETED);
-        em.persist(removal);
-        return true;
+        return RemovalStatus.COMPLETED;
     }
 
     private void archiveUserRepositories(UserRemoval removal, GitHubOrganization organization, String gitHubUsername)
@@ -264,5 +279,24 @@ public class MembershipRemovalBatchlet extends AbstractBatchlet {
         fork.setSourceRepositoryName(repository.getSource().generateId());
         fork.setSourceRepositoryUrl(repository.getSource().getCloneUrl());
         return fork;
+    }
+
+    private void logUnsubscribedTeam(UserRemoval removal, String gitHubUsername, GitHubTeam team, UnsubscribeStatus status) {
+        UnsubscribedUserFromTeam unsubscribedUserFromTeam = new UnsubscribedUserFromTeam();
+        unsubscribedUserFromTeam.setUserRemoval(removal);
+        unsubscribedUserFromTeam.setGithubUsername(gitHubUsername);
+        unsubscribedUserFromTeam.setGithubTeamName(team.getName());
+        unsubscribedUserFromTeam.setGithubOrgName(team.getOrganization().getName());
+        unsubscribedUserFromTeam.setStatus(status);
+        em.persist(unsubscribedUserFromTeam);
+    }
+
+    private void logUnsubscribedOrg(UserRemoval removal, String gitHubUsername, GitHubOrganization org, UnsubscribeStatus status) {
+        UnsubscribedUserFromOrg unsubscribedUserFromOrg = new UnsubscribedUserFromOrg();
+        unsubscribedUserFromOrg.setUserRemoval(removal);
+        unsubscribedUserFromOrg.setGithubUsername(gitHubUsername);
+        unsubscribedUserFromOrg.setGithubOrgName(org.getName());
+        unsubscribedUserFromOrg.setStatus(status);
+        em.persist(unsubscribedUserFromOrg);
     }
 }
