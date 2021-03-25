@@ -145,7 +145,7 @@ public class MembershipRemovalBatchletTest {
 
         String result = batchlet.process();
         em.clear();
-        assertThat(result).isEqualTo("DONE");
+        assertThat(result).isEqualTo("DONE_WITH_ERRORS");
 
         // verify that all removals has been marked as processed
         TypedQuery<UserRemoval> findRemovalsQuery = em.createNamedQuery(UserRemoval.FIND_REMOVALS_TO_PROCESS, UserRemoval.class);
@@ -241,12 +241,10 @@ public class MembershipRemovalBatchletTest {
         em.getTransaction().begin();
 
         // let the removal be processed
-        batchlet.processRemoval(removal);
+        RemovalStatus removalStatus = batchlet.processRemoval(removal);
         em.getTransaction().commit();
 
-        // verify the processing ended successfully
-        em.refresh(removal);
-        assertThat(removal.getStatus()).isEqualTo(RemovalStatus.COMPLETED);
+        assertThat(removalStatus).isEqualTo(RemovalStatus.COMPLETED);
 
         // verify audit log for unsubscribed orgs
         List<UnsubscribedUserFromOrg> unsubscribedUsers =
