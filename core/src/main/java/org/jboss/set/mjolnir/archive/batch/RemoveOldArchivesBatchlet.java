@@ -122,7 +122,7 @@ public class RemoveOldArchivesBatchlet extends AbstractBatchlet {
                         logger.infof("Deleting archives for %d %s",
                                 repositoryFork.getId(), repositoryFork.getRepositoryName());
                         File gitDir = new File(configuration.getRepositoryArchiveRoot() + "/" + repositoryFork.getSourceRepositoryName());
-                        GitArchiveRepository repository = new GitArchiveRepository(gitDir);
+                        GitArchiveRepository repository = GitArchiveRepository.open(gitDir);
                         repository.removeRemoteBranches(repositoryFork.getOwnerLogin());
                         updateRecordStatus(repositoryFork, RepositoryForkStatus.DELETED);
                         logger.infof("Marking repository fork record as DELETED: #%d %s",

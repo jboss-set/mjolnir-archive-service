@@ -21,20 +21,29 @@ public class GitArchiveRepository {
 
     private final Logger logger = Logger.getLogger(getClass());
 
-    private Git git;
+    private final Git git;
 
     GitArchiveRepository(Git git) {
         this.git = git;
     }
 
-    public GitArchiveRepository(File repositoryDirectory) throws IOException {
-        this.git = Git.open(repositoryDirectory);
+    /**
+     * Opens a local repository clone.
+     *
+     * @param repositoryDirectory an existing repository dir
+     * @return a GitArchiveRepository instance
+     */
+    public static GitArchiveRepository open(File repositoryDirectory) throws IOException {
+        return new GitArchiveRepository(Git.open(repositoryDirectory));
     }
 
     /**
      * Creates a local repository clone.
      *
-     * @return Returns instance of this class which can be used for further work with the cloned repository.
+     * @param targetDirectory a repository dir where the repository should be cloned to
+     * @param originUrl a URL of the repository that will be cloned
+     * @param credentialsProvider credentials
+     * @return a GitArchiveRepository instance
      */
     public static GitArchiveRepository clone(File targetDirectory, String originUrl, CredentialsProvider credentialsProvider)
             throws GitAPIException {

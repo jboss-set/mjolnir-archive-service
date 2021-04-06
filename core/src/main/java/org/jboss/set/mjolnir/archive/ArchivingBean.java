@@ -9,6 +9,7 @@ import org.jboss.set.mjolnir.archive.configuration.Configuration;
 
 import javax.inject.Inject;
 import java.io.File;
+import java.io.IOException;
 import java.net.URISyntaxException;
 
 public class ArchivingBean {
@@ -29,7 +30,7 @@ public class ArchivingBean {
      *
      * @param repository object representing repository for archiving
      */
-    public void createRepositoryMirror(Repository repository) throws GitAPIException, URISyntaxException {
+    public void createRepositoryMirror(Repository repository) throws GitAPIException, URISyntaxException, IOException {
         logger.infof("Archiving repository %s", repository.getCloneUrl());
 
         if (repository.getSource() == null || repository.getSource().getOwner() == null) {
@@ -53,7 +54,12 @@ public class ArchivingBean {
         File organizationDirectory = new File(archiveRoot, sourceOrganizationName);
         File repositoryDirectory = new File(organizationDirectory, repository.getName());
 
-        GitArchiveRepository gitArchive = GitArchiveRepository.clone(repositoryDirectory, parentUrl, credentialsProvider);
+        GitArchiveRepository gitArchive;
+        if (repositoryDirectory.exists()) {
+            gitArchive = GitArchiveRepository.open(repositoryDirectory);
+        } else {
+            gitArchive = GitArchiveRepository.clone(repositoryDirectory, parentUrl, credentialsProvider);
+        }
         gitArchive.addRemote(repository.getOwner().getLogin(), repository.getCloneUrl());
         gitArchive.fetch(repository.getOwner().getLogin(), credentialsProvider);
     }
