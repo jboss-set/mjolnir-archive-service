@@ -118,15 +118,17 @@ public class RemoveOldArchivesBatchletTest {
         em.clear();
 
         // reset created timestamps of all records three months back
-        em.createNativeQuery("update repository_forks set created = now() - interval 90 day")
+        // (subtracting additional one hour to avoid test issues around summer time switch, because database computes
+        //  time subtraction differently from java)
+        em.createNativeQuery("update repository_forks set created = now() - interval 90 day - interval 1 hour ")
                 .executeUpdate();
         // set created timestamp for the first duplicate record four months back
-        em.createNativeQuery("update repository_forks set created = now() - interval 120 day " +
+        em.createNativeQuery("update repository_forks set created = now() - interval 120 day - interval 1 hour " +
                 "where id = :id")
                 .setParameter("id", oldestFork.getId())
                 .executeUpdate();
         // set created timestamp for the third duplicate record two months back
-        em.createNativeQuery("update repository_forks set created = now() - interval 60 day " +
+        em.createNativeQuery("update repository_forks set created = now() - interval 60 day - interval 1 hour " +
                 "where id = :id")
                 .setParameter("id", newestFork.getId())
                 .executeUpdate();
