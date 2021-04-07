@@ -10,6 +10,8 @@
         <class>org.jboss.set.mjolnir.archive.domain.RegisteredUser</class>
         <class>org.jboss.set.mjolnir.archive.domain.GitHubOrganization</class>
         <class>org.jboss.set.mjolnir.archive.domain.GitHubTeam</class>
+        <class>org.jboss.set.mjolnir.archive.domain.UnsubscribedUserFromOrg</class>
+        <class>org.jboss.set.mjolnir.archive.domain.UnsubscribedUserFromTeam</class>
 
         <properties>
             <property name="javax.persistence.transactionType" value="RESOURCE_LOCAL"/>
