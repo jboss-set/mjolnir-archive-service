@@ -27,10 +27,12 @@ public class ArchivingBeanTestCase {
     public TemporaryFolder tempDir = new TemporaryFolder();
 
     private Repository userRepository;
+    @SuppressWarnings("FieldCanBeLocal")
     private Repository archiveRepo;
     private File sourceRepositoryDir;
     private File forkedRepositoryDir;
     private File archiveDir;
+    private Configuration configuration;
 
     @Before
     public void setup() throws Exception {
@@ -78,15 +80,15 @@ public class ArchivingBeanTestCase {
         archiveRepo.setOwner(githubUser);
         archiveRepo.setSource(sourceRepository);
 
-    }
-
-    @Test
-    public void test() throws Exception {
-        Configuration configuration = new Configuration.ConfigurationBuilder()
+        configuration = new Configuration.ConfigurationBuilder()
                 .setGitHubToken("token")
                 .setRepositoryArchiveRoot(archiveDir.getAbsolutePath())
                 .build();
 
+    }
+
+    @Test
+    public void testCreateRepositoryMirror() throws Exception {
         ArchivingBean bean = new ArchivingBean(configuration);
         bean.createRepositoryMirror(userRepository);
 
@@ -111,7 +113,7 @@ public class ArchivingBeanTestCase {
 
             assertThat(archivedRepository.branchList().setListMode(ListBranchCommand.ListMode.ALL).call())
                     .extracting("name")
-                    .containsOnly("refs/heads/master",
+                    .contains("refs/heads/master",
                             "refs/remotes/TomasHofman/master",
                             "refs/remotes/TomasHofman/feature");
 
@@ -130,6 +132,17 @@ public class ArchivingBeanTestCase {
             });
 
         }
+    }
+
+    @Test
+    public void testCreateRepositoryMirrorInExistingArchive() throws Exception {
+        // create a preexisting archived repository
+        try (Git archiveRepo = Git.init().setDirectory(new File(archiveDir, "testorg/testrepo")).call()) {
+            archiveRepo.remoteAdd().setName("origin").setUri(new URIish(sourceRepositoryDir.getAbsolutePath())).call();
+            archiveRepo.pull().setRemote("origin").setRemoteBranchName("master").call();
+        }
+
+        testCreateRepositoryMirror();
     }
 
     private RemoteConfig findRemoteConfigByName(List<? extends RemoteConfig> remotes, String name) {
