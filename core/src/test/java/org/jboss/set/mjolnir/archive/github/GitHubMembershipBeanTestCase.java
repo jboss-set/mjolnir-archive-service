@@ -5,10 +5,13 @@ import org.eclipse.egit.github.core.User;
 import org.eclipse.egit.github.core.client.GitHubClient;
 import org.jboss.set.mjolnir.archive.domain.GitHubOrganization;
 import org.jboss.set.mjolnir.archive.domain.GitHubTeam;
+import org.jboss.set.mjolnir.archive.domain.UserRemoval;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.mockito.Mockito;
 
+import javax.persistence.EntityManager;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.Arrays;
@@ -19,7 +22,6 @@ import java.util.stream.Collectors;
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.delete;
 import static com.github.tomakehurst.wiremock.client.WireMock.deleteRequestedFor;
-import static com.github.tomakehurst.wiremock.client.WireMock.exactly;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
@@ -36,6 +38,8 @@ public class GitHubMembershipBeanTestCase {
     public WireMockRule wireMockRule = new WireMockRule(8089);
 
     private final GitHubClient client = new GitHubClient("localhost", 8089, "http");
+    private final EntityManager entityManagerMock = Mockito.mock(EntityManager.class);
+    private final GitHubMembershipBean bean = new GitHubMembershipBean(client, entityManagerMock);
 
     @Before
     public void setup() throws IOException, URISyntaxException {
@@ -111,28 +115,22 @@ public class GitHubMembershipBeanTestCase {
 
     @Test
     public void testRemoveUsersFromTeam() throws Exception {
-        GitHubMembershipBean bean = new GitHubMembershipBean(client);
-        GitHubTeam team = new GitHubTeam();
-        team.setGithubId(1);
-        team.setName("Team 1");
-        bean.removeUserFromTeam(team, "lvydra");
+        GitHubOrganization org = createOrganizationEntity();
+        
+        bean.removeUserFromTeam(new UserRemoval(), org.getTeams().get(0), "lvydra");
 
         verify(deleteRequestedFor(urlEqualTo("/api/v3/teams/1/members/lvydra")));
     }
 
     @Test
     public void testRemoveUsersFromOrganization() throws Exception {
-        GitHubMembershipBean bean = new GitHubMembershipBean(client);
-
-        bean.removeUserFromOrganization(createOrganizationEntity(), "thofman");
+        bean.removeUserFromOrganization(new UserRemoval(), createOrganizationEntity(), "thofman");
 
         verify(deleteRequestedFor(urlEqualTo("/api/v3/orgs/testorg/members/thofman")));
     }
 
     @Test
     public void testGetAllTeamsMembers() throws Exception {
-        GitHubMembershipBean bean = new GitHubMembershipBean(client);
-
         Map<GitHubTeam, List<User>> members = bean.getAllTeamsMembers(createOrganizationEntity());
 
         Map<String, List<User>> teamNameMap = members.entrySet().stream()
@@ -145,7 +143,6 @@ public class GitHubMembershipBeanTestCase {
     @Test
     public void testGetTeamsMembers() throws Exception {
         GitHubOrganization org = createOrganizationEntity();
-        GitHubMembershipBean bean = new GitHubMembershipBean(client);
 
         assertThat(bean.getTeamsMembers(org.getTeams().get(0)))
                 .extracting("login").containsOnly("bob");

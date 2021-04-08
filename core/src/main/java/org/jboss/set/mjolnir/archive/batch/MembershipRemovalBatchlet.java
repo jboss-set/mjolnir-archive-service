@@ -11,9 +11,6 @@ import org.jboss.set.mjolnir.archive.domain.RegisteredUser;
 import org.jboss.set.mjolnir.archive.domain.RemovalStatus;
 import org.jboss.set.mjolnir.archive.domain.RepositoryFork;
 import org.jboss.set.mjolnir.archive.domain.RepositoryForkStatus;
-import org.jboss.set.mjolnir.archive.domain.UnsubscribeStatus;
-import org.jboss.set.mjolnir.archive.domain.UnsubscribedUserFromOrg;
-import org.jboss.set.mjolnir.archive.domain.UnsubscribedUserFromTeam;
 import org.jboss.set.mjolnir.archive.domain.UserRemoval;
 import org.jboss.set.mjolnir.archive.domain.repositories.RemovalLogRepositoryBean;
 import org.jboss.set.mjolnir.archive.github.GitHubMembershipBean;
@@ -55,7 +52,7 @@ public class MembershipRemovalBatchlet extends AbstractBatchlet {
     private ArchivingBean archivingBean;
 
     @Inject
-    private GitHubMembershipBean teamServiceBean;
+    private GitHubMembershipBean membershipBean;
 
     @Inject
     private RemovalLogRepositoryBean logRepositoryBean;
@@ -193,11 +190,9 @@ public class MembershipRemovalBatchlet extends AbstractBatchlet {
                 // remove team memberships
                 for (GitHubTeam team : organization.getTeams()) {
                     try {
-                        teamServiceBean.removeUserFromTeam(team, gitHubUsername);
-                        logUnsubscribedTeam(removal, gitHubUsername, team, UnsubscribeStatus.COMPLETED);
+                        membershipBean.removeUserFromTeam(removal, team, gitHubUsername);
                     } catch (IOException e) {
                         logRepositoryBean.logError(removal, "Couldn't remove user membership from GitHub teams: " + gitHubUsername, e);
-                        logUnsubscribedTeam(removal, gitHubUsername, team, UnsubscribeStatus.FAILED);
                         return RemovalStatus.FAILED;
                     }
                 }
@@ -205,11 +200,9 @@ public class MembershipRemovalBatchlet extends AbstractBatchlet {
                 // if this is enabled for given organization, remove organization membership
                 if (organization.isUnsubscribeUsersFromOrg()) {
                     try {
-                        teamServiceBean.removeUserFromOrganization(organization, gitHubUsername);
-                        logUnsubscribedOrg(removal, gitHubUsername, organization, UnsubscribeStatus.COMPLETED);
+                        membershipBean.removeUserFromOrganization(removal, organization, gitHubUsername);
                     } catch (IOException e) {
                         logRepositoryBean.logError(removal, "Couldn't remove user membership from GitHub organization: " + gitHubUsername, e);
-                        logUnsubscribedOrg(removal, gitHubUsername, organization, UnsubscribeStatus.FAILED);
                         return RemovalStatus.FAILED;
                     }
                 }
@@ -281,22 +274,4 @@ public class MembershipRemovalBatchlet extends AbstractBatchlet {
         return fork;
     }
 
-    private void logUnsubscribedTeam(UserRemoval removal, String gitHubUsername, GitHubTeam team, UnsubscribeStatus status) {
-        UnsubscribedUserFromTeam unsubscribedUserFromTeam = new UnsubscribedUserFromTeam();
-        unsubscribedUserFromTeam.setUserRemoval(removal);
-        unsubscribedUserFromTeam.setGithubUsername(gitHubUsername);
-        unsubscribedUserFromTeam.setGithubTeamName(team.getName());
-        unsubscribedUserFromTeam.setGithubOrgName(team.getOrganization().getName());
-        unsubscribedUserFromTeam.setStatus(status);
-        em.persist(unsubscribedUserFromTeam);
-    }
-
-    private void logUnsubscribedOrg(UserRemoval removal, String gitHubUsername, GitHubOrganization org, UnsubscribeStatus status) {
-        UnsubscribedUserFromOrg unsubscribedUserFromOrg = new UnsubscribedUserFromOrg();
-        unsubscribedUserFromOrg.setUserRemoval(removal);
-        unsubscribedUserFromOrg.setGithubUsername(gitHubUsername);
-        unsubscribedUserFromOrg.setGithubOrgName(org.getName());
-        unsubscribedUserFromOrg.setStatus(status);
-        em.persist(unsubscribedUserFromOrg);
-    }
 }
