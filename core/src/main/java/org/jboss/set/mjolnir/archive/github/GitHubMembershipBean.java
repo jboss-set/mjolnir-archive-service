@@ -6,8 +6,13 @@ import org.eclipse.egit.github.core.service.OrganizationService;
 import org.jboss.logging.Logger;
 import org.jboss.set.mjolnir.archive.domain.GitHubOrganization;
 import org.jboss.set.mjolnir.archive.domain.GitHubTeam;
+import org.jboss.set.mjolnir.archive.domain.UnsubscribeStatus;
+import org.jboss.set.mjolnir.archive.domain.UnsubscribedUserFromOrg;
+import org.jboss.set.mjolnir.archive.domain.UnsubscribedUserFromTeam;
+import org.jboss.set.mjolnir.archive.domain.UserRemoval;
 
 import javax.inject.Inject;
+import javax.persistence.EntityManager;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
@@ -23,11 +28,13 @@ public class GitHubMembershipBean {
 
     private final CustomizedTeamService teamService;
     private final OrganizationService organizationService;
+    private final EntityManager em;
 
     @Inject
-    public GitHubMembershipBean(GitHubClient client) {
+    public GitHubMembershipBean(GitHubClient client, EntityManager em) {
         teamService = new CustomizedTeamService(client);
         organizationService = new OrganizationService(client);
+        this.em = em;
     }
 
     /**
@@ -36,10 +43,17 @@ public class GitHubMembershipBean {
      * @param gitHubTeam github team
      * @param gitHubUsername   github username
      */
-    public void removeUserFromTeam(GitHubTeam gitHubTeam, String gitHubUsername) throws IOException {
+    public void removeUserFromTeam(UserRemoval removal, GitHubTeam gitHubTeam, String gitHubUsername)
+            throws IOException {
         if (isMember(gitHubUsername, gitHubTeam)) {
             logger.infof("Removing membership of user %s in team %s", gitHubUsername, gitHubTeam.getName());
-            teamService.removeMember(gitHubTeam.getGithubId(), gitHubUsername);
+            try {
+                teamService.removeMember(gitHubTeam.getGithubId(), gitHubUsername);
+                logUnsubscribedTeam(removal, gitHubUsername, gitHubTeam, UnsubscribeStatus.COMPLETED);
+            } catch (IOException e) {
+                logUnsubscribedTeam(removal, gitHubUsername, gitHubTeam, UnsubscribeStatus.FAILED);
+                throw e;
+            }
         } else {
             logger.infof("User %s is not a member of team %s", gitHubUsername, gitHubTeam.getName());
         }
@@ -51,10 +65,17 @@ public class GitHubMembershipBean {
      * @param organization organization to remove user from
      * @param gitHubUsername github username
      */
-    public void removeUserFromOrganization(GitHubOrganization organization, String gitHubUsername) throws IOException {
+    public void removeUserFromOrganization(UserRemoval removal, GitHubOrganization organization, String gitHubUsername)
+            throws IOException {
         logger.infof("Removing user %s from organization %s", gitHubUsername, organization.getName());
         if (organizationService.isMember(organization.getName(), gitHubUsername)) {
-            organizationService.removeMember(organization.getName(), gitHubUsername);
+            try {
+                organizationService.removeMember(organization.getName(), gitHubUsername);
+                logUnsubscribedOrg(removal, gitHubUsername, organization, UnsubscribeStatus.COMPLETED);
+            } catch (IOException e) {
+                logUnsubscribedOrg(removal, gitHubUsername, organization, UnsubscribeStatus.FAILED);
+                throw e;
+            }
         }
     }
 
@@ -90,4 +111,22 @@ public class GitHubMembershipBean {
         return teamService.isMember(team.getGithubId(), githubUser);
     }
 
+    private void logUnsubscribedTeam(UserRemoval removal, String gitHubUsername, GitHubTeam team, UnsubscribeStatus status) {
+        UnsubscribedUserFromTeam unsubscribedUserFromTeam = new UnsubscribedUserFromTeam();
+        unsubscribedUserFromTeam.setUserRemoval(removal);
+        unsubscribedUserFromTeam.setGithubUsername(gitHubUsername);
+        unsubscribedUserFromTeam.setGithubTeamName(team.getName());
+        unsubscribedUserFromTeam.setGithubOrgName(team.getOrganization().getName());
+        unsubscribedUserFromTeam.setStatus(status);
+        em.persist(unsubscribedUserFromTeam);
+    }
+
+    private void logUnsubscribedOrg(UserRemoval removal, String gitHubUsername, GitHubOrganization org, UnsubscribeStatus status) {
+        UnsubscribedUserFromOrg unsubscribedUserFromOrg = new UnsubscribedUserFromOrg();
+        unsubscribedUserFromOrg.setUserRemoval(removal);
+        unsubscribedUserFromOrg.setGithubUsername(gitHubUsername);
+        unsubscribedUserFromOrg.setGithubOrgName(org.getName());
+        unsubscribedUserFromOrg.setStatus(status);
+        em.persist(unsubscribedUserFromOrg);
+    }
 }
