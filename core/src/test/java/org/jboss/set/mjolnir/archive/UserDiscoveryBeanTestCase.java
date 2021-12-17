@@ -223,6 +223,47 @@ public class UserDiscoveryBeanTestCase {
     }
 
     @Test
+    public void testFindOrganizationsMembersWithoutLdapAccountWhenRemovalExists() throws IOException, NamingException {
+        createRegisteredUser("bob", "Bob", false);
+        createRegisteredUser("ben", "ben", false);
+        createUserRemoval("ben");
+
+        HashMap<String, Boolean> usersLdapMap = new HashMap<>();
+        usersLdapMap.put("ben", false);
+        usersLdapMap.put("bob", true);
+        Mockito.when(ldapClientBeanMock.checkUsersExists(anyCollection())).thenReturn(usersLdapMap);
+
+        Map<String, List<GitHubOrganization>> users = userDiscoveryBean.findOrganizationsMembersWithoutLdapAccount();
+
+        // user shouldn't be included because a removal record exists
+        assertThat(users.keySet()).isEmpty();
+    }
+
+    @Test
+    public void testFindOrganizationsMembersWithoutLdapAccountWhenOldRemovalExists() throws IOException, NamingException {
+        createRegisteredUser("bob", "Bob", false);
+        createRegisteredUser("ben", "ben", false);
+        UserRemoval removal = createUserRemoval("ben");
+        // move created timestamp 2 days back
+        em.getTransaction().begin();
+        int updatedRecords = em.createNativeQuery("update user_removals set created = CURRENT_TIMESTAMP - 2 where id = " + removal.getId()).executeUpdate();
+        assertThat(updatedRecords).isEqualTo(1);
+        em.getTransaction().commit();
+        em.clear();
+
+        HashMap<String, Boolean> usersLdapMap = new HashMap<>();
+        usersLdapMap.put("ben", false);
+        usersLdapMap.put("bob", true);
+        Mockito.when(ldapClientBeanMock.checkUsersExists(anyCollection())).thenReturn(usersLdapMap);
+
+        Map<String, List<GitHubOrganization>> users = userDiscoveryBean.findOrganizationsMembersWithoutLdapAccount();
+
+        // removal record is older than a day, user should be reported
+        assertThat(users.keySet()).containsOnly("ben");
+        assertThat(users.get("ben")).extracting("name").containsOnly("testorg");
+    }
+
+    @Test
     public void testFindTeamsMembersWithoutLdapAccount() throws IOException, NamingException {
         createRegisteredUser("bob", "Bob", false);
         createRegisteredUser("ben", "ben", false);
@@ -234,6 +275,47 @@ public class UserDiscoveryBeanTestCase {
 
         Map<String, List<GitHubTeam>> users = userDiscoveryBean.findTeamsMembersWithoutLdapAccount();
 
+        assertThat(users.keySet()).containsOnly("ben");
+        assertThat(users.get("ben")).extracting("name").containsOnly("Team 2");
+    }
+
+    @Test
+    public void testFindTeamsMembersWithoutLdapAccountWhenRemovalExists() throws IOException, NamingException {
+        createRegisteredUser("bob", "Bob", false);
+        createRegisteredUser("ben", "ben", false);
+        createUserRemoval("ben");
+
+        HashMap<String, Boolean> usersLdapMap = new HashMap<>();
+        usersLdapMap.put("ben", false);
+        usersLdapMap.put("bob", true);
+        Mockito.when(ldapClientBeanMock.checkUsersExists(anyCollection())).thenReturn(usersLdapMap);
+
+        Map<String, List<GitHubTeam>> users = userDiscoveryBean.findTeamsMembersWithoutLdapAccount();
+
+        // removal record exists, user should not be reported
+        assertThat(users.keySet()).isEmpty();
+    }
+
+    @Test
+    public void testFindTeamsMembersWithoutLdapAccountWhenOldRemovalExists() throws IOException, NamingException {
+        createRegisteredUser("bob", "Bob", false);
+        createRegisteredUser("ben", "ben", false);
+        UserRemoval removal = createUserRemoval("ben");
+        // move created timestamp 2 days back
+        em.getTransaction().begin();
+        int updatedRecords = em.createNativeQuery("update user_removals set created = CURRENT_TIMESTAMP - 2 where id = " + removal.getId()).executeUpdate();
+        assertThat(updatedRecords).isEqualTo(1);
+        em.getTransaction().commit();
+        em.clear();
+
+        HashMap<String, Boolean> usersLdapMap = new HashMap<>();
+        usersLdapMap.put("ben", false);
+        usersLdapMap.put("bob", true);
+        Mockito.when(ldapClientBeanMock.checkUsersExists(anyCollection())).thenReturn(usersLdapMap);
+
+        Map<String, List<GitHubTeam>> users = userDiscoveryBean.findTeamsMembersWithoutLdapAccount();
+
+        // removal record is older than a day, user should be reported
         assertThat(users.keySet()).containsOnly("ben");
         assertThat(users.get("ben")).extracting("name").containsOnly("Team 2");
     }
@@ -344,13 +426,19 @@ public class UserDiscoveryBeanTestCase {
         em.getTransaction().commit();
     }
 
-    private void createUserRemoval(String username) {
+    private UserRemoval createUserRemoval(String username) {
         UserRemoval userRemoval = new UserRemoval();
         userRemoval.setLdapUsername(username);
 
+        return createUserRemoval(userRemoval);
+    }
+
+    private UserRemoval createUserRemoval(UserRemoval userRemoval) {
         em.getTransaction().begin();
         em.persist(userRemoval);
         em.getTransaction().commit();
+
+        return userRemoval;
     }
 
     private void clearData() {

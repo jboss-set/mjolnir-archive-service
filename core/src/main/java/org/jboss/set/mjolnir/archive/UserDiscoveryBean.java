@@ -17,6 +17,9 @@ import javax.naming.NamingException;
 import javax.persistence.EntityManager;
 import javax.persistence.EntityTransaction;
 import java.io.IOException;
+import java.sql.Timestamp;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -138,6 +141,16 @@ public class UserDiscoveryBean {
      * @return map GitHub username => LDAP username
      */
     Map<String, String> findUsersWithoutLdapAccount(Collection<String> githubUsernames) throws NamingException {
+        List<UserRemoval> existingRemovalsToProcess =
+                em.createNamedQuery(UserRemoval.FIND_REMOVALS_TO_PROCESS, UserRemoval.class).getResultList();
+        Timestamp dayAgo = Timestamp.from(Instant.now().minus(1, ChronoUnit.DAYS));
+        List<String> ldapUsernamesWaitingForRemoval = existingRemovalsToProcess.stream()
+                .filter(removal -> removal.getCreated().after(dayAgo))
+                .map(UserRemoval::getLdapUsername)
+                .collect(Collectors.toList());
+        logger.infof("Following LDAP usernames are still waiting for removal and won't be reported: %s",
+                ldapUsernamesWaitingForRemoval);
+
         // retrieve kerberos names of collected users (those that we know and are not whitelisted)
         HashMap<String, String> githubToLdapUsernames = new HashMap<>();
         githubUsernames.forEach(githubUsername -> {
@@ -158,6 +171,7 @@ public class UserDiscoveryBean {
         Map<String, Boolean> usersLdapMap = ldapClientBean.checkUsersExists(githubToLdapUsernames.values());
         Map<String, String> result = githubToLdapUsernames.entrySet().stream()
                 .filter(entry -> !usersLdapMap.get(entry.getValue()))
+                .filter(entry -> !ldapUsernamesWaitingForRemoval.contains(entry.getValue()))
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
         logger.infof("Detected %d users that do not have active LDAP account.", result.size());
         return result;
