@@ -54,7 +54,7 @@ public class ReportScheduler {
     @Inject
     private InvalidResponsiblePersonTable invalidUserId;
 
-    @Schedule(dayOfWeek="Sun", hour="0", persistent = false)
+    @Schedule(dayOfWeek="Sun", hour="7", persistent = false)
     public void sendMail() throws IOException, NamingException {
         String fromAddress = configuration.getReportingEmail();
         String toAddress = configuration.getReportingEmail();
