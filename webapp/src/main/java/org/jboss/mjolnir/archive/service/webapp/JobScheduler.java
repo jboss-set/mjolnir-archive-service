@@ -14,6 +14,9 @@ import javax.ejb.Startup;
 import javax.ejb.TransactionManagement;
 import javax.ejb.TransactionManagementType;
 import javax.inject.Inject;
+import java.lang.management.ManagementFactory;
+import java.lang.management.ThreadInfo;
+import java.lang.management.ThreadMXBean;
 import java.util.List;
 import java.util.Properties;
 
@@ -22,7 +25,7 @@ import java.util.Properties;
 @TransactionManagement(TransactionManagementType.BEAN) // do not open managed transaction
 public class JobScheduler {
 
-    private final Logger logger = Logger.getLogger(getClass());
+    private final static Logger logger = Logger.getLogger(JobScheduler.class);
 
     @Inject
     private Configuration configuration;
@@ -49,8 +52,9 @@ public class JobScheduler {
             List<Long> runningExecutions = jobOperator.getRunningExecutions(Constants.REMOVE_MEMBERSHIP_JOB_NAME);
 
             if (runningExecutions.size() > 0) {
-                logger.infof("%d jobs with name %s are already running. Batch job is not started now.",
+                logger.warnf("%d jobs with name %s are already running. Batch job is not started now.",
                         runningExecutions.size(), Constants.REMOVE_MEMBERSHIP_JOB_NAME);
+                logThreadDump();
                 return;
             }
         } catch (NoSuchJobException e) {
@@ -85,4 +89,12 @@ public class JobScheduler {
         logger.infof("Started batch job # %d", executionId);
     }
 
+    private static void logThreadDump() {
+        StringBuilder threadDump = new StringBuilder("Thread dump: ");
+        ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
+        for(ThreadInfo threadInfo: threadMXBean.dumpAllThreads(true, true)) {
+            threadDump.append(threadInfo.toString());
+        }
+        logger.warn(threadDump.toString());
+    }
 }
