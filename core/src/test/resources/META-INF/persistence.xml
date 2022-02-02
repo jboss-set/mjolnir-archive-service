@@ -23,7 +23,7 @@
             <property name="javax.persistence.sql-load-script-source" value="../dbscripts/load.sql"/>
 
             <property name="hibernate.connection.driver_class" value="org.h2.Driver"/>
-            <property name="hibernate.connection.url" value="jdbc:h2:./target/data/repository"/>
+            <property name="hibernate.connection.url" value="jdbc:h2:./target/data/repository;MODE=LEGACY"/>
 
             <property name="hibernate.show_sql" value="true"/>
             <property name="hibernate.hbm2ddl.import_files_sql_extractor" value="org.hibernate.tool.hbm2ddl.MultipleLinesSqlCommandExtractor" />
