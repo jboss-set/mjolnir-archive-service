@@ -23,11 +23,11 @@
             <property name="javax.persistence.sql-load-script-source" value="../dbscripts/load.sql"/>
 
             <property name="hibernate.connection.driver_class" value="org.h2.Driver"/>
-            <property name="hibernate.connection.url" value="jdbc:h2:./target/data/repository;MODE=LEGACY"/>
+            <property name="hibernate.connection.url" value="jdbc:h2:./target/data/repository"/>
 
             <property name="hibernate.show_sql" value="true"/>
             <property name="hibernate.hbm2ddl.import_files_sql_extractor" value="org.hibernate.tool.hbm2ddl.MultipleLinesSqlCommandExtractor" />
-            <property name="hibernate.dialect" value="org.hibernate.dialect.H2Dialect" />
+            <property name="hibernate.dialect" value="org.jboss.set.mjolnir.archive.util.H2DialectExtended" />
 
             <property name="hibernate.jdbc.batch_size" value="50" />
             <property name="hibernate.order_updates" value="true"/>
