@@ -93,7 +93,7 @@ public class EmployeeOffBoardEventsMDB implements MessageListener {
                 List<String> allUserUids = ldapClientBean.findAllUserUids(currentUid);
                 uids.addAll(allUserUids);
             } catch (NamingException e) {
-                logger.errorf("Couldn't obtain user UIDs from LDAP for user %s", currentUid);
+                logger.errorf(e, "Couldn't obtain user UIDs from LDAP for user %s", currentUid);
             }
 
             List<RegisteredUser> registeredUsers = userRepositoryBean.findByKrbUsernames(uids);
