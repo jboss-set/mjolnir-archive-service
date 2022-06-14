@@ -28,6 +28,7 @@ import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -124,12 +125,12 @@ public class RemoveOldArchivesBatchletTest {
                 .executeUpdate();
         // set created timestamp for the first duplicate record four months back
         em.createNativeQuery("update repository_forks set created = now() - interval '120' day - interval '1' hour " +
-                "where id = :id")
+                        "where id = :id")
                 .setParameter("id", oldestFork.getId())
                 .executeUpdate();
         // set created timestamp for the third duplicate record two months back
         em.createNativeQuery("update repository_forks set created = now() - interval '60' day - interval '1' hour " +
-                "where id = :id")
+                        "where id = :id")
                 .setParameter("id", newestFork.getId())
                 .executeUpdate();
 
@@ -174,16 +175,22 @@ public class RemoveOldArchivesBatchletTest {
                 "user1/repo1",
                 "user2/repo1"
         );
-        assertThat(forks.get("user1/repo1"))
-                .extracting("repositoryName", "created.toLocalDateTime.toLocalDate")
-                .containsOnly(Tuple.tuple("user1/repo1", THREE_MONTHS_AGO));
-        assertThat(forks.get("user2/repo1"))
-                .extracting("repositoryName", "created.toLocalDateTime.toLocalDate")
-                .containsOnly(
-                        Tuple.tuple("user2/repo1", FOUR_MONTHS_AGO),
-                        Tuple.tuple("user2/repo1", THREE_MONTHS_AGO),
-                        Tuple.tuple("user2/repo1", TWO_MONTHS_AGO)
-                );
+
+        List<Tuple> tupples = forks.get("user1/repo1").stream().map(f -> Tuple.tuple(
+                f.getRepositoryName(),
+                f.getCreated().toLocalDateTime().toLocalDate()
+        )).collect(Collectors.toList());
+        assertThat(tupples).containsOnly(Tuple.tuple("user1/repo1", THREE_MONTHS_AGO));
+
+        tupples = forks.get("user2/repo1").stream().map(f -> Tuple.tuple(
+                f.getRepositoryName(),
+                f.getCreated().toLocalDateTime().toLocalDate()
+        )).collect(Collectors.toList());
+        assertThat(tupples).containsOnly(
+                Tuple.tuple("user2/repo1", FOUR_MONTHS_AGO),
+                Tuple.tuple("user2/repo1", THREE_MONTHS_AGO),
+                Tuple.tuple("user2/repo1", TWO_MONTHS_AGO)
+        );
     }
 
     /**
@@ -222,18 +229,19 @@ public class RemoveOldArchivesBatchletTest {
         em.clear();
         List<RepositoryFork> forks = em.createQuery("SELECT f FROM RepositoryFork f ORDER BY f.id", RepositoryFork.class)
                 .getResultList();
-        assertThat(forks)
-                .extracting("repositoryName",
-                        "created.toLocalDateTime.toLocalDate",
-                        "deleted.toLocalDateTime.toLocalDate",
-                        "status")
-                .containsOnly(
-                        Tuple.tuple("user1/repo1", THREE_MONTHS_AGO, TODAY, RepositoryForkStatus.DELETED),
-                        Tuple.tuple("user2/repo1", FOUR_MONTHS_AGO, TODAY, RepositoryForkStatus.SUPERSEDED),
-                        Tuple.tuple("user2/repo1", THREE_MONTHS_AGO, TODAY, RepositoryForkStatus.SUPERSEDED),
-                        Tuple.tuple("user2/repo1", TWO_MONTHS_AGO, null, RepositoryForkStatus.ARCHIVED), // too young for deletion
-                        Tuple.tuple("user2/repo2", THREE_MONTHS_AGO, YESTERDAY, RepositoryForkStatus.DELETION_FAILED)
-                );
+        List<Tuple> tupples = forks.stream().map(f -> Tuple.tuple(
+                f.getRepositoryName(),
+                f.getCreated().toLocalDateTime().toLocalDate(),
+                f.getDeleted() == null ? null : f.getDeleted().toLocalDateTime().toLocalDate(),
+                f.getStatus()
+        )).collect(Collectors.toList());
+        assertThat(tupples).containsOnly(
+                Tuple.tuple("user1/repo1", THREE_MONTHS_AGO, TODAY, RepositoryForkStatus.DELETED),
+                Tuple.tuple("user2/repo1", FOUR_MONTHS_AGO, TODAY, RepositoryForkStatus.SUPERSEDED),
+                Tuple.tuple("user2/repo1", THREE_MONTHS_AGO, TODAY, RepositoryForkStatus.SUPERSEDED),
+                Tuple.tuple("user2/repo1", TWO_MONTHS_AGO, null, RepositoryForkStatus.ARCHIVED), // too young for deletion
+                Tuple.tuple("user2/repo2", THREE_MONTHS_AGO, YESTERDAY, RepositoryForkStatus.DELETION_FAILED)
+        );
 
         // check that user1's branches were deleted in the git repo
         try (Git git = Git.open(new File(tempDir.getRoot(), "upstream/repo1"))) {
@@ -263,18 +271,19 @@ public class RemoveOldArchivesBatchletTest {
         em.clear();
         List<RepositoryFork> forks = em.createQuery("SELECT f FROM RepositoryFork f ORDER BY f.id", RepositoryFork.class)
                 .getResultList();
-        assertThat(forks)
-                .extracting("repositoryName",
-                        "created.toLocalDateTime.toLocalDate",
-                        "deleted.toLocalDateTime.toLocalDate",
-                        "status")
-                .containsOnly(
-                        Tuple.tuple("user1/repo1", THREE_MONTHS_AGO, null, RepositoryForkStatus.ARCHIVED),
-                        Tuple.tuple("user2/repo1", FOUR_MONTHS_AGO, null, RepositoryForkStatus.ARCHIVED),
-                        Tuple.tuple("user2/repo1", THREE_MONTHS_AGO, null, RepositoryForkStatus.ARCHIVED),
-                        Tuple.tuple("user2/repo1", TWO_MONTHS_AGO, null, RepositoryForkStatus.ARCHIVED),
-                        Tuple.tuple("user2/repo2", THREE_MONTHS_AGO, YESTERDAY, RepositoryForkStatus.DELETION_FAILED)
-                );
+        List<Tuple> tupples = forks.stream().map(f -> Tuple.tuple(
+                f.getRepositoryName(),
+                f.getCreated().toLocalDateTime().toLocalDate(),
+                f.getDeleted() == null ? null : f.getDeleted().toLocalDateTime().toLocalDate(),
+                f.getStatus()
+        )).collect(Collectors.toList());
+        assertThat(tupples).containsOnly(
+                Tuple.tuple("user1/repo1", THREE_MONTHS_AGO, null, RepositoryForkStatus.ARCHIVED),
+                Tuple.tuple("user2/repo1", FOUR_MONTHS_AGO, null, RepositoryForkStatus.ARCHIVED),
+                Tuple.tuple("user2/repo1", THREE_MONTHS_AGO, null, RepositoryForkStatus.ARCHIVED),
+                Tuple.tuple("user2/repo1", TWO_MONTHS_AGO, null, RepositoryForkStatus.ARCHIVED),
+                Tuple.tuple("user2/repo2", THREE_MONTHS_AGO, YESTERDAY, RepositoryForkStatus.DELETION_FAILED)
+        );
 
         // check git repo, should still contain all branches
         try (Git git = Git.open(new File(tempDir.getRoot(), "upstream/repo1"))) {
