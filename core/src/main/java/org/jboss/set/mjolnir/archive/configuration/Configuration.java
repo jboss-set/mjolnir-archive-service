@@ -18,8 +18,8 @@ public class Configuration {
     private boolean removeUsersWithoutLdapAccount = false;
     private boolean removeArchives = false;
     private int removeArchivesAfter = 90;
-    private int connectTimeout = 20 * 1000;
-    private int readTimeout = 20 * 1000;
+    private int connectTimeout = 5 * 60 * 1000;
+    private int readTimeout = 5 * 60 * 1000;
 
     public Configuration() {
     }
