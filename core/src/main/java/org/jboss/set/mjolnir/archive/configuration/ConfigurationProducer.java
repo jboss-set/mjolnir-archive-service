@@ -1,11 +1,13 @@
 package org.jboss.set.mjolnir.archive.configuration;
 
 import org.eclipse.egit.github.core.client.GitHubClient;
+import org.eclipse.egit.github.core.client.IGitHubConstants;
 import org.jboss.logging.Logger;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.Produces;
 import javax.sql.DataSource;
+import java.net.HttpURLConnection;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -80,9 +82,30 @@ public class ConfigurationProducer {
         }
     }
 
+    /**
+     * Default GitHubClient producer method, used by application.
+     */
     @Produces
     public GitHubClient createGitHubClient(Configuration configuration) {
-        GitHubClient gitHubClient = new GitHubClient();
+        return createGitHubClient(configuration, IGitHubConstants.HOST_API, -1, IGitHubConstants.PROTOCOL_HTTPS);
+    }
+
+    /**
+     * More parameter-rich factory method, used in tests.
+     */
+    public GitHubClient createGitHubClient(Configuration configuration, String hostname, int port, String scheme) {
+        GitHubClient gitHubClient = new GitHubClient(hostname, port, scheme) {
+            @Override
+            protected HttpURLConnection configureRequest(HttpURLConnection request) {
+                HttpURLConnection conn = super.configureRequest(request);
+
+                // configure timeouts
+                conn.setConnectTimeout(configuration.getConnectTimeout());
+                conn.setReadTimeout(configuration.getReadTimeout());
+
+                return conn;
+            }
+        };
         gitHubClient.setOAuth2Token(configuration.getGitHubToken());
         return gitHubClient;
     }

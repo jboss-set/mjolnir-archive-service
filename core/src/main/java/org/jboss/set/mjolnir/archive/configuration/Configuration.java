@@ -18,6 +18,8 @@ public class Configuration {
     private boolean removeUsersWithoutLdapAccount = false;
     private boolean removeArchives = false;
     private int removeArchivesAfter = 90;
+    private int connectTimeout = 20 * 1000;
+    private int readTimeout = 20 * 1000;
 
     public Configuration() {
     }
@@ -80,9 +82,17 @@ public class Configuration {
         return removeUsersWithoutLdapAccount;
     }
 
+    public int getConnectTimeout() {
+        return connectTimeout;
+    }
+
+    public int getReadTimeout() {
+        return readTimeout;
+    }
+
     public static class ConfigurationBuilder {
 
-        private Configuration configuration = new Configuration();
+        private final Configuration configuration = new Configuration();
 
         public ConfigurationBuilder setGitHubToken(String gitHubToken) {
             this.configuration.gitHubToken = gitHubToken;
@@ -133,6 +143,16 @@ public class Configuration {
 
         public ConfigurationBuilder setRemoveArchivesAfter(int days) {
             this.configuration.removeArchivesAfter = days;
+            return this;
+        }
+
+        public ConfigurationBuilder setConnectTimeout(int connectTimeout) {
+            this.configuration.connectTimeout = connectTimeout;
+            return this;
+        }
+
+        public ConfigurationBuilder setReadTimeout(int readTimeout) {
+            this.configuration.readTimeout = readTimeout;
             return this;
         }
 

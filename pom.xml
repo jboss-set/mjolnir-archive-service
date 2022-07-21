@@ -25,7 +25,7 @@
         <maven.compiler.target>1.8</maven.compiler.target>
         <maven.compiler.source>1.8</maven.compiler.source>
 
-        <version.egit>5.7.0.202003110725-r</version.egit>
+        <version.egit>6.0.0.202111291000-r</version.egit>
         <version.jgit>5.6.1.202002131546-r</version.jgit>
         <version.jberet>1.0.2.Final</version.jberet>
         <version.deltaspike>1.9.6</version.deltaspike>
