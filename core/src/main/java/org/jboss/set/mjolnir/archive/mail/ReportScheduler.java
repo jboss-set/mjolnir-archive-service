@@ -7,7 +7,7 @@ import org.jboss.set.mjolnir.archive.mail.report.RemovalsReportTable;
 import org.jboss.set.mjolnir.archive.mail.report.ReportTable;
 import org.jboss.set.mjolnir.archive.mail.report.UnregisteredMembersReportTable;
 import org.jboss.set.mjolnir.archive.mail.report.UsersWithoutLdapReportTable;
-import org.jboss.set.mjolnir.archive.mail.report.WhitelistedUsersReportTable;
+import org.jboss.set.mjolnir.archive.mail.report.AllowedUsersReportTable;
 
 import javax.ejb.Schedule;
 import javax.ejb.Singleton;
@@ -46,7 +46,7 @@ public class ReportScheduler {
     private UsersWithoutLdapReportTable usersWithoutLdapReportTable;
 
     @Inject
-    private WhitelistedUsersReportTable whitelistedUsersReportTable;
+    private AllowedUsersReportTable allowedUsersReportTable;
 
     @Inject
     private UnregisteredMembersReportTable unregisteredMembersReportTable;
@@ -66,7 +66,7 @@ public class ReportScheduler {
         reportTables.add(removalsReportTable);
         reportTables.add(unregisteredMembersReportTable);
         reportTables.add(usersWithoutLdapReportTable);
-        reportTables.add(whitelistedUsersReportTable);
+        reportTables.add(allowedUsersReportTable);
         reportTables.add(invalidUserId);
 
         String body = mailBodyMessageProducer.composeMessageBody(reportTables);
