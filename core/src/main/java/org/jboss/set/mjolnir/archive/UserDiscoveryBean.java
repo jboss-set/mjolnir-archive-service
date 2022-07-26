@@ -177,7 +177,7 @@ public class UserDiscoveryBean {
         return result;
     }
 
-    public List<RegisteredUser> getWhitelistedUsers() {
+    public List<RegisteredUser> getAllowedUsersList() {
         return em.createNamedQuery(RegisteredUser.FIND_WHITELISTED, RegisteredUser.class).getResultList();
     }
 

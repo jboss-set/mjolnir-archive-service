@@ -327,7 +327,7 @@ public class UserDiscoveryBeanTestCase {
         createRegisteredUser(null, "ben", true);
         createRegisteredUser(null, "joe", false);
 
-        List<RegisteredUser> members = userDiscoveryBean.getWhitelistedUsers();
+        List<RegisteredUser> members = userDiscoveryBean.getAllowedUsersList();
         assertThat(members)
                 .extracting("githubName")
                 .containsOnly("ben", "bob", "jim");
@@ -340,7 +340,7 @@ public class UserDiscoveryBeanTestCase {
         createRegisteredUser(null, "BEN", true);
         createRegisteredUser(null, "JOE", false);
 
-        List<RegisteredUser> members = userDiscoveryBean.getWhitelistedUsers();
+        List<RegisteredUser> members = userDiscoveryBean.getAllowedUsersList();
         assertThat(members)
                 .extracting("githubName", "responsiblePerson")
                 .containsOnly(

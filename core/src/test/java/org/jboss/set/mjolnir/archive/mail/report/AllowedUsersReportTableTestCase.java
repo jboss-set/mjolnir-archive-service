@@ -24,7 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.doReturn;
 
 @RunWith(CdiTestRunner.class)
-public class WhitelistedUsersReportTableTestCase {
+public class AllowedUsersReportTableTestCase {
 
     @Rule
     public WireMockRule wireMockRule = new WireMockRule(8089);
@@ -39,7 +39,7 @@ public class WhitelistedUsersReportTableTestCase {
     private LdapClientBean ldapClientBeanMock;
 
     @Inject
-    private WhitelistedUsersReportTable whitelistedUsersReportTable;
+    private AllowedUsersReportTable allowedUsersReportTable;
 
     @Before
     public void setup() {
@@ -93,13 +93,13 @@ public class WhitelistedUsersReportTableTestCase {
         doReturn(true).when(ldapClientBeanMock).checkUserExists("carlExisting");
         doReturn(true).when(ldapClientBeanMock).checkUserExists("samExisting");
 
-        whitelistedUsersReportTable.userDiscoveryBean = userDiscoveryBean;
+        allowedUsersReportTable.userDiscoveryBean = userDiscoveryBean;
 
-        List<RegisteredUser> users = userDiscoveryBean.getWhitelistedUsers();
+        List<RegisteredUser> users = userDiscoveryBean.getAllowedUsersList();
         List<RegisteredUser> usersList = new ArrayList<>(users);
-        usersList.sort(new WhitelistedUsersReportTable.GitHubNameComparator());
+        usersList.sort(new AllowedUsersReportTable.GitHubNameComparator());
 
-        String messageBody = whitelistedUsersReportTable.composeTable();
+        String messageBody = allowedUsersReportTable.composeTable();
         Document doc = Jsoup.parse(messageBody);
 
         assertThat(doc.select("tr").size()).isEqualTo(users.size() + 1);

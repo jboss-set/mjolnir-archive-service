@@ -16,9 +16,9 @@ import static j2html.TagCreator.td;
 import static j2html.TagCreator.th;
 import static j2html.TagCreator.tr;
 
-public class WhitelistedUsersReportTable implements ReportTable {
+public class AllowedUsersReportTable implements ReportTable {
 
-    private static final String REPORT_TABLE_TITLE = "Whitelisted Users";
+    private static final String REPORT_TABLE_TITLE = "Allowed Users";
 
     @Inject
     UserDiscoveryBean userDiscoveryBean;
@@ -32,22 +32,22 @@ public class WhitelistedUsersReportTable implements ReportTable {
                                 th(Constants.LDAP_NAME).withStyle(Styles.TH_STYLE),
                                 th(Constants.RESPONSIBLE_PERSON).withStyle(Styles.TH_STYLE)
                         ),
-                        addWhitelistedUserRows(getWhitelistedUsers())
+                        addAllowedUsersListRows(getAllowedUsersList())
                 ))
                 .render();
         return html;
     }
 
-    private static DomContent addWhitelistedUserRows(List<RegisteredUser> whitelistedUsers) {
-        whitelistedUsers.sort(new GitHubNameComparator());
-        return each(whitelistedUsers, user -> tr(
+    private static DomContent addAllowedUsersListRows(List<RegisteredUser> allowedUsersList) {
+        allowedUsersList.sort(new GitHubNameComparator());
+        return each(allowedUsersList, user -> tr(
                 td(ReportUtils.stringOrEmpty(user.getGithubName())).withStyle(Styles.TD_STYLE),
                 td(ReportUtils.stringOrEmpty(user.getResponsiblePerson())).withStyle(Styles.TD_STYLE)
         ));
     }
 
-    private List<RegisteredUser> getWhitelistedUsers() {
-        return userDiscoveryBean.getWhitelistedUsers();
+    private List<RegisteredUser> getAllowedUsersList() {
+        return userDiscoveryBean.getAllowedUsersList();
     }
 
     static class GitHubNameComparator implements Comparator<RegisteredUser> {
