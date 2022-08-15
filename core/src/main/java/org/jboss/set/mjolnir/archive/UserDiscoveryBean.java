@@ -88,6 +88,10 @@ public class UserDiscoveryBean {
      * @return LDAP usernames
      */
     public Collection<String> findAllUsersWithoutLdapAccount() throws IOException, NamingException {
+        return findUsersWithoutLdapAccount(findAllGitHubUsers()).values();
+    }
+
+    Set<String> findAllGitHubUsers() throws IOException {
         // collect members of all teams and organizations
         HashMap<String, List<GitHubTeam>> allTeamsMembers = getAllTeamsMembers();
         logger.infof("Found %d members of all monitored teams.", allTeamsMembers.size());
@@ -99,7 +103,7 @@ public class UserDiscoveryBean {
         githubUsernames.addAll(allOrganizationsMembers.keySet());
         logger.infof("Found %d members of all monitored organizations and teams.", githubUsernames.size());
 
-        return findUsersWithoutLdapAccount(githubUsernames).values();
+        return githubUsernames;
     }
 
     /**
@@ -174,6 +178,19 @@ public class UserDiscoveryBean {
                 .filter(entry -> !ldapUsernamesWaitingForRemoval.contains(entry.getValue()))
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
         logger.infof("Detected %d users that do not have active LDAP account.", result.size());
+        return result;
+    }
+
+    public List<RegisteredUser> findInvalidGithubUsers() throws IOException {
+        // find all GitHub users
+        Set<String> allGitHubUsers = findAllGitHubUsers();
+        // find all users registered in our db
+        List<RegisteredUser> allRegisteredUsers = userRepositoryBean.getAllUsers();
+        // get all users which don't exist in GitHub
+        List<RegisteredUser> result = allRegisteredUsers.stream()
+                .filter(user -> !allGitHubUsers.contains(user.getGithubName()))
+                .collect(Collectors.toList());
+        logger.infof("Detected %d users that do not have valid GitHub account.", result.size());
         return result;
     }
 

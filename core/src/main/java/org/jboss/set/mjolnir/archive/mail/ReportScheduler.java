@@ -2,6 +2,7 @@ package org.jboss.set.mjolnir.archive.mail;
 
 import org.jboss.logging.Logger;
 import org.jboss.set.mjolnir.archive.configuration.Configuration;
+import org.jboss.set.mjolnir.archive.mail.report.InvalidGitHubUsersReportTable;
 import org.jboss.set.mjolnir.archive.mail.report.InvalidResponsiblePersonTable;
 import org.jboss.set.mjolnir.archive.mail.report.RemovalsReportTable;
 import org.jboss.set.mjolnir.archive.mail.report.ReportTable;
@@ -54,6 +55,9 @@ public class ReportScheduler {
     @Inject
     private InvalidResponsiblePersonTable invalidUserId;
 
+    @Inject
+    private InvalidGitHubUsersReportTable invalidGitHubUsersReportTable;
+
     @Schedule(dayOfWeek="Sun", hour="7", persistent = false)
     public void sendMail() throws IOException, NamingException {
         String fromAddress = configuration.getReportingEmail();
@@ -68,6 +72,7 @@ public class ReportScheduler {
         reportTables.add(usersWithoutLdapReportTable);
         reportTables.add(allowedUsersReportTable);
         reportTables.add(invalidUserId);
+        reportTables.add(invalidGitHubUsersReportTable);
 
         String body = mailBodyMessageProducer.composeMessageBody(reportTables);
 
