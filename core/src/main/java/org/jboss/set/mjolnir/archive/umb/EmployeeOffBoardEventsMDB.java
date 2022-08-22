@@ -127,7 +127,7 @@ public class EmployeeOffBoardEventsMDB implements MessageListener {
 
                 String registeredUids = registeredUsers.stream().map(RegisteredUser::getKerberosName)
                         .collect(Collectors.joining(", "));
-                logger.warnf("Found several registered users for UID %s: %s", currentUid, registeredUids);
+                logger.errorf("Found several registered users for UID %s: %s", currentUid, registeredUids);
                 logRepositoryBean.logMessage(String.format("Found several registered users for UID %s: %s", currentUid,
                         registeredUids));
             }

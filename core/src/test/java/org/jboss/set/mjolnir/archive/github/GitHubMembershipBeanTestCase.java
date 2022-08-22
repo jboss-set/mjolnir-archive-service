@@ -97,7 +97,7 @@ public class GitHubMembershipBeanTestCase {
 
     @Test
     public void testWiremockResponses() throws Exception {
-        CustomizedTeamService teamService = new CustomizedTeamService(client);
+        ExtendedTeamService teamService = new ExtendedTeamService(client);
 
         assertTrue(teamService.isMember(1, "lvydra"));
         assertFalse(teamService.isMember(2, "lvydra"));

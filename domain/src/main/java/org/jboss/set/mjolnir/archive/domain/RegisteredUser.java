@@ -11,7 +11,7 @@ import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
 
 /**
- * Represents user who logged in to Mjolnir UI. Contains mapping between kerberos username and GitHub username.
+ * Represents user was who registered via Mjolnir UI. Expresses mapping between kerberos username and GitHub username.
  */
 @NamedQueries({
         @NamedQuery(name = RegisteredUser.FIND_ALL, query = "SELECT u FROM RegisteredUser u"),
@@ -39,8 +39,14 @@ public class RegisteredUser {
     @Column(name = "krb_name", unique = true)
     private String kerberosName;
 
+    @Column(name = "employee_number", unique = true)
+    private Integer employeeNumber;
+
     @Column(name = "github_name", unique = true)
     private String githubName;
+
+    @Column(name = "github_id", unique = true)
+    private Integer githubId;
 
     @Column
     private String note;
@@ -65,6 +71,22 @@ public class RegisteredUser {
 
     public void setKerberosName(String kerberosName) {
         this.kerberosName = kerberosName;
+    }
+
+    public Integer getEmployeeNumber() {
+        return employeeNumber;
+    }
+
+    public void setEmployeeNumber(Integer employeeNumber) {
+        this.employeeNumber = employeeNumber;
+    }
+
+    public Integer getGithubId() {
+        return githubId;
+    }
+
+    public void setGithubId(Integer githubId) {
+        this.githubId = githubId;
     }
 
     public String getGithubName() {

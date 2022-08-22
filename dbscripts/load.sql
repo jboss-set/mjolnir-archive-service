@@ -13,4 +13,4 @@ insert into application_parameters (param_name, param_value) values ('ldap.searc
 insert into application_parameters (param_name, param_value) values ('application.remove_archives', 'false');
 insert into application_parameters (param_name, param_value) values ('application.remove_archives_after', '90');
 
-insert into users (krb_name, github_name) values ('thofman', 'TomasHofman');
+insert into users (krb_name, github_name, github_id) values ('thofman', 'TomasHofman', 123);

@@ -30,6 +30,13 @@ public final class TestUtils {
      * The test case need to contain @Rule annotated WireMockRule field.
      */
     public static void setupGitHubApiStubs() throws IOException, URISyntaxException {
+        // get user by GH ID
+        stubFor(get(urlPathEqualTo("/api/v3/user/123"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody(readSampleResponse("responses/gh-user.json"))));
+
         // query list of repositories in the organization
         stubFor(get(urlPathEqualTo("/api/v3/orgs/testorg/repos"))
                 .willReturn(aResponse()
