@@ -13,5 +13,5 @@ if [ ! -f "$H2_JAR" ]; then
   wget "$H2_DOWNLOAD_URL" -P "$DB_DIR"
 fi
 
-cd "$DB_DIR"
+cd "$DB_DIR" || ! echo "Failure"
 java -cp "$JAR_NAME" org.h2.tools.Server
