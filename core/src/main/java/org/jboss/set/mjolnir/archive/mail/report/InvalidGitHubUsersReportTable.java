@@ -54,7 +54,7 @@ public class InvalidGitHubUsersReportTable implements ReportTable {
         // produce sorted list
         List<RegisteredUser> invalidUsers =
                 userDiscoveryBean.findInvalidGithubUsers().stream()
-                        .sorted(new GithubNameComparator())
+                        .sorted(new GithubNameUserComparator())
                         .collect(Collectors.toList());
 
         return each(invalidUsers, invalidUser -> tr(
@@ -63,14 +63,17 @@ public class InvalidGitHubUsersReportTable implements ReportTable {
         ));
     }
 
-    private static class GithubNameComparator implements Comparator<RegisteredUser> {
+    private static class GithubNameUserComparator implements Comparator<RegisteredUser> {
 
         @Override
         public int compare(RegisteredUser o1, RegisteredUser o2) {
             if (o1.getGithubName() == null) {
                 return 1;
             }
-            return o1.getGithubName().compareTo(o2.getGithubName());
+            if (o2.getGithubName() == null) {
+                return -1;
+            }
+            return o1.getGithubName().compareToIgnoreCase(o2.getGithubName());
         }
     }
 
