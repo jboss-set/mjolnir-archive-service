@@ -7,6 +7,7 @@ import org.jboss.set.mjolnir.archive.domain.RegisteredUser;
 import javax.inject.Inject;
 import javax.naming.NamingException;
 import java.io.IOException;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -29,7 +30,7 @@ public class InvalidGitHubUsersReportTable implements ReportTable {
     private static final String REPORT_TABLE_TITLE = "Users without a valid GitHub account";
 
     @Inject
-    private UserDiscoveryBean userDiscoveryBean;
+    UserDiscoveryBean userDiscoveryBean;
 
     @Override
     public String composeTable() throws NamingException, IOException {
@@ -49,17 +50,28 @@ public class InvalidGitHubUsersReportTable implements ReportTable {
         return html;
     }
 
-    private DomContent addInvalidUsersRows() throws IOException, NamingException {
+    private DomContent addInvalidUsersRows() throws IOException {
         // produce sorted list
         List<RegisteredUser> invalidUsers =
                 userDiscoveryBean.findInvalidGithubUsers().stream()
-                        .sorted()
+                        .sorted(new GithubNameComparator())
                         .collect(Collectors.toList());
 
         return each(invalidUsers, invalidUser -> tr(
                 td(invalidUser.getGithubName()).withStyle(Styles.TD_STYLE),
                 td(invalidUser.getKerberosName()).withStyle(Styles.TD_STYLE)
         ));
+    }
+
+    private static class GithubNameComparator implements Comparator<RegisteredUser> {
+
+        @Override
+        public int compare(RegisteredUser o1, RegisteredUser o2) {
+            if (o1.getGithubName() == null) {
+                return 1;
+            }
+            return o1.getGithubName().compareTo(o2.getGithubName());
+        }
     }
 
 }
