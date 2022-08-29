@@ -67,6 +67,9 @@ public class InvalidGitHubUsersReportTable implements ReportTable {
 
         @Override
         public int compare(RegisteredUser o1, RegisteredUser o2) {
+            if (o1.getGithubName() == null && o2.getGithubName() == null) {
+                return 0;
+            }
             if (o1.getGithubName() == null) {
                 return 1;
             }

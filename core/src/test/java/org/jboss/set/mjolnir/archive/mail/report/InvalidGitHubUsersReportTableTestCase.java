@@ -10,7 +10,6 @@ import javax.naming.NamingException;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class InvalidGitHubUsersReportTableTestCase {
 
@@ -28,7 +27,11 @@ public class InvalidGitHubUsersReportTableTestCase {
         user3.setKerberosName("user-3");
         user3.setGithubName(null);
 
-        List<RegisteredUser> sampleUsers = Arrays.asList(user1, user2, user3);
+        RegisteredUser user4 = new RegisteredUser();
+        user4.setKerberosName("user-4");
+        user4.setGithubName(null);
+
+        List<RegisteredUser> sampleUsers = Arrays.asList(user1, user2, user3, user4);
 
         UserDiscoveryBean discoveryBeanMock = Mockito.mock(UserDiscoveryBean.class);
         Mockito.when(discoveryBeanMock.findInvalidGithubUsers()).thenReturn(sampleUsers);
