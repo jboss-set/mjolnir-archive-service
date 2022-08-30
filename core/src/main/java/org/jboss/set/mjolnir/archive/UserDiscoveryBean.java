@@ -2,6 +2,7 @@ package org.jboss.set.mjolnir.archive;
 
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.egit.github.core.User;
+import org.eclipse.egit.github.core.client.GitHubClient;
 import org.jboss.logging.Logger;
 import org.jboss.set.mjolnir.archive.domain.GitHubOrganization;
 import org.jboss.set.mjolnir.archive.domain.GitHubTeam;
@@ -9,9 +10,11 @@ import org.jboss.set.mjolnir.archive.domain.RegisteredUser;
 import org.jboss.set.mjolnir.archive.domain.RemovalLog;
 import org.jboss.set.mjolnir.archive.domain.UserRemoval;
 import org.jboss.set.mjolnir.archive.domain.repositories.RegisteredUserRepositoryBean;
+import org.jboss.set.mjolnir.archive.github.ExtendedUserService;
 import org.jboss.set.mjolnir.archive.github.GitHubMembershipBean;
 import org.jboss.set.mjolnir.archive.ldap.LdapClientBean;
 
+import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import javax.naming.NamingException;
 import javax.persistence.EntityManager;
@@ -53,6 +56,15 @@ public class UserDiscoveryBean {
     @Inject
     private RegisteredUserRepositoryBean userRepositoryBean;
 
+    @Inject
+    private GitHubClient gitHubClient;
+
+    private ExtendedUserService userService;
+
+    @PostConstruct
+    void init() {
+        userService = new ExtendedUserService(gitHubClient);
+    }
 
     public void createRemovalsForUsersWithoutLdapAccount() {
         try {
@@ -181,17 +193,21 @@ public class UserDiscoveryBean {
         return result;
     }
 
-    public List<RegisteredUser> findInvalidGithubUsers() throws IOException {
-        // find all GitHub users
-        Set<String> allGitHubUsers = findAllGitHubUsers();
+    public List<RegisteredUser> findInvalidGithubUsers() {
         // find all users registered in our db
         List<RegisteredUser> allRegisteredUsers = userRepositoryBean.getAllUsers();
-        // get all users which don't exist in GitHub
-        List<RegisteredUser> result = allRegisteredUsers.stream()
-                .filter(user -> !allGitHubUsers.contains(user.getGithubName()))
+        // find all users whose GH usernames do not exist or do not match their GH ID
+        List<RegisteredUser> invalidUsers = allRegisteredUsers.stream()
+                .filter(registeredUser -> StringUtils.isNotBlank(registeredUser.getGithubName()))
+                .filter(registeredUser -> {
+                    User user = findGithubUserByLogin(registeredUser.getGithubName());
+                    if (user == null || user.getId() != registeredUser.getGithubId()) {
+                        return true;
+                    }
+                    return false;
+                })
                 .collect(Collectors.toList());
-        logger.infof("Detected %d users that do not have valid GitHub account.", result.size());
-        return result;
+        return invalidUsers;
     }
 
     public List<RegisteredUser> getAllowedUsersList() {
@@ -286,6 +302,7 @@ public class UserDiscoveryBean {
      * @deprecated The users-teams/orgs relationships can be obtained straight away via `findUnregisteredTeamsMembers()`
      *   and `getUnregisteredOrganizationsMembers()`.
      */
+    @Deprecated
     public List<GitHubTeam> getAllUsersTeams(String gitHubUser) throws IOException {
         List<GitHubTeam> memberTeams = new ArrayList<>();
 
@@ -347,6 +364,15 @@ public class UserDiscoveryBean {
             UserRemoval removal = new UserRemoval();
             removal.setLdapUsername(userName);
             em.persist(removal);
+        }
+    }
+
+    private User findGithubUserByLogin(String login) {
+        try {
+            return userService.getUser(login);
+        } catch (IOException e) {
+            logger.warnf("GH user '%s' not found: %s", login, e.getMessage());
+            return null;
         }
     }
 }
