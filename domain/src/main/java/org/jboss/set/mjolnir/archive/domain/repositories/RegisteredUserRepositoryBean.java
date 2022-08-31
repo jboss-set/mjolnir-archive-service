@@ -42,4 +42,9 @@ public class RegisteredUserRepositoryBean {
         List<RegisteredUser> listOfUsersTable = em.createNamedQuery(RegisteredUser.FIND_ALL).getResultList();
         return listOfUsersTable;
     }
+
+    public void updateUser(RegisteredUser registeredUser) {
+        em.persist(registeredUser);
+        em.flush();
+    }
 }
