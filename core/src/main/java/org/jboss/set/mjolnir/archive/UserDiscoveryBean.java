@@ -193,6 +193,11 @@ public class UserDiscoveryBean {
         return result;
     }
 
+    /**
+     * Returns registered users whose GH usernames do not exist or do not match their GH ID.
+     *
+     * @return list of RegisteredUser instances
+     */
     public List<RegisteredUser> findInvalidGithubUsers() {
         // find all users registered in our db
         List<RegisteredUser> allRegisteredUsers = userRepositoryBean.getAllUsers();
@@ -208,6 +213,40 @@ public class UserDiscoveryBean {
                 })
                 .collect(Collectors.toList());
         return invalidUsers;
+    }
+
+    /**
+     * Looks up GH username for given GH ID.
+     *
+     * @param githubId GH user ID
+     * @return GH username
+     */
+    public String findGithubLoginForID(Integer githubId) {
+        if (githubId == null) {
+            return null;
+        }
+        try {
+            User user = userService.getUserById(githubId);
+            return user.getLogin();
+        } catch (IOException e) {
+            logger.warnf("Can't find GH user for ID %d", githubId);
+            return null;
+        }
+    }
+
+    /**
+     * Checks whether LDAP account exists.
+     *
+     * @param ldapUsername LDAP username
+     * @return Boolean signifying if LDAP account was found or not, or null if LDAP query failed.
+     */
+    public Boolean hasActiveLdapAccount(String ldapUsername) {
+        try {
+            return ldapClientBean.checkUserExists(ldapUsername);
+        } catch (NamingException e) {
+            logger.errorf(e, "Can't query LDAP for user %s", ldapUsername);
+            return null;
+        }
     }
 
     public List<RegisteredUser> getAllowedUsersList() {

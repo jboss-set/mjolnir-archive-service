@@ -9,6 +9,7 @@ import javax.persistence.NamedQueries;
 import javax.persistence.NamedQuery;
 import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
+import java.sql.Timestamp;
 
 /**
  * Represents user was who registered via Mjolnir UI. Expresses mapping between kerberos username and GitHub username.
@@ -57,6 +58,9 @@ public class RegisteredUser {
 
     @Column(name = "responsible_person")
     private String responsiblePerson;
+
+    @Column
+    private Timestamp created;
 
     public RegisteredUser() {
     }
@@ -127,5 +131,9 @@ public class RegisteredUser {
 
     public void setResponsiblePerson(String responsiblePerson) {
         this.responsiblePerson = responsiblePerson;
+    }
+
+    public Timestamp getCreated() {
+        return created;
     }
 }
