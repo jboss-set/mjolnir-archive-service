@@ -7,6 +7,7 @@ import org.assertj.core.groups.Tuple;
 import org.eclipse.egit.github.core.Repository;
 import org.jboss.set.mjolnir.archive.ArchivingBean;
 import org.jboss.set.mjolnir.archive.domain.GitHubOrganization;
+import org.jboss.set.mjolnir.archive.domain.RegisteredUser;
 import org.jboss.set.mjolnir.archive.domain.RemovalStatus;
 import org.jboss.set.mjolnir.archive.domain.UnsubscribeStatus;
 import org.jboss.set.mjolnir.archive.domain.UnsubscribedUserFromOrg;
@@ -116,9 +117,20 @@ public class MembershipRemovalBatchletTest {
     }
 
     @Test
-    public void testFindGitHubUsername() {
-        String ghUsername = batchlet.findGitHubUsername("thofman");
-        assertThat(ghUsername).isEqualTo("TomasHofman");
+    public void testFindRegisteredUser() {
+        RegisteredUser user = batchlet.findRegisteredUser("thofman");
+        assertThat(user.getGithubName()).isEqualTo("TomasHofman");
+    }
+
+    @Test
+    public void testFindUsersGitHubName() throws Exception {
+        // configure GH API stubs
+        TestUtils.setupGitHubApiStubs();
+
+        RegisteredUser registeredUser = new RegisteredUser();
+        registeredUser.setGithubId(123);
+        String githubName = batchlet.findUsersGitHubName(registeredUser);
+        assertThat(githubName).isEqualTo("TomasHofman");
     }
 
     @Test

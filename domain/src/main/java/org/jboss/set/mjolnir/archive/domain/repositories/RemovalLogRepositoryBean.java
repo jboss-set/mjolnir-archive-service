@@ -24,6 +24,9 @@ public class RemovalLogRepositoryBean {
         em.persist(log);
     }
 
+    public void logError(UserRemoval removal, String message) {
+        logError(removal, message, null);
+    }
 
     public void logError(UserRemoval removal, String message, Throwable t) {
         logger.errorf(t, message);

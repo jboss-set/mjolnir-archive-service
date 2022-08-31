@@ -19,6 +19,8 @@ import static j2html.TagCreator.table;
 import static j2html.TagCreator.td;
 import static j2html.TagCreator.th;
 import static j2html.TagCreator.tr;
+import static org.jboss.set.mjolnir.archive.mail.report.ReportUtils.optionalToString;
+import static org.jboss.set.mjolnir.archive.mail.report.ReportUtils.stringOrEmpty;
 
 /**
  * Prints a list of registered users who no longer have any valid (existing) GitHub accounts
@@ -42,7 +44,11 @@ public class InvalidGitHubUsersReportTable implements ReportTable {
                 table().withStyle(Styles.TABLE_STYLE + Styles.TD_STYLE).with(
                         tr().with(
                                 th(Constants.GH_NAME).withStyle(Styles.TH_STYLE),
-                                th(Constants.LDAP_NAME).withStyle(Styles.TH_STYLE)
+                                th(Constants.GH_ID).withStyle(Styles.TH_STYLE),
+                                th(Constants.GH_NAME_FOR_ID).withStyle(Styles.TH_STYLE),
+                                th(Constants.LDAP_NAME).withStyle(Styles.TH_STYLE),
+                                th(Constants.ACTIVE_LDAP_ACCOUNT).withStyle(Styles.TH_STYLE),
+                                th(Constants.REGISTERED).withStyle(Styles.TH_STYLE)
                         ),
                         addInvalidUsersRows()
                 ))
@@ -50,7 +56,7 @@ public class InvalidGitHubUsersReportTable implements ReportTable {
         return html;
     }
 
-    private DomContent addInvalidUsersRows() throws IOException {
+    private DomContent addInvalidUsersRows() {
         // produce sorted list
         List<RegisteredUser> invalidUsers =
                 userDiscoveryBean.findInvalidGithubUsers().stream()
@@ -59,8 +65,24 @@ public class InvalidGitHubUsersReportTable implements ReportTable {
 
         return each(invalidUsers, invalidUser -> tr(
                 td(invalidUser.getGithubName()).withStyle(Styles.TD_STYLE),
-                td(invalidUser.getKerberosName()).withStyle(Styles.TD_STYLE)
+                td(optionalToString(invalidUser.getGithubId())).withStyle(Styles.TD_STYLE),
+                td(stringOrEmpty(userDiscoveryBean.findGithubLoginForID(invalidUser.getGithubId())))
+                        .withStyle(Styles.TD_STYLE),
+                td(invalidUser.getKerberosName()).withStyle(Styles.TD_STYLE),
+                td(hasActiveLdapAccount(invalidUser)).withStyle(Styles.TD_STYLE),
+                td(optionalToString(invalidUser.getCreated())).withStyle(Styles.TD_STYLE)
         ));
+    }
+
+    private String hasActiveLdapAccount(RegisteredUser registeredUser) {
+        if (registeredUser == null) {
+            return "";
+        }
+        Boolean active = userDiscoveryBean.hasActiveLdapAccount(registeredUser.getKerberosName());
+        if (active == null) {
+            return "Failed to discover";
+        }
+        return active ? "Yes" : "No";
     }
 
     private static class GithubNameUserComparator implements Comparator<RegisteredUser> {

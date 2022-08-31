@@ -2,6 +2,8 @@ package org.jboss.mjolnir.archive.service.webapp;
 
 public final class Constants {
 
+    public static final String UPDATE_GITHUB_USERNAMES_JOB_NAME = "updateGithubUsernamesJob";
+
     public static final String REMOVE_MEMBERSHIP_JOB_NAME = "membershipRemovalJob";
 
     public static final String DELETE_ARCHIVES_JOB_NAME = "archiveRemovalJob";

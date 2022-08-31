@@ -2,6 +2,8 @@ package org.jboss.set.mjolnir.archive.batch;
 
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.egit.github.core.Repository;
+import org.eclipse.egit.github.core.User;
+import org.eclipse.egit.github.core.client.GitHubClient;
 import org.jboss.logging.Logger;
 import org.jboss.set.mjolnir.archive.ArchivingBean;
 import org.jboss.set.mjolnir.archive.configuration.Configuration;
@@ -13,9 +15,11 @@ import org.jboss.set.mjolnir.archive.domain.RepositoryFork;
 import org.jboss.set.mjolnir.archive.domain.RepositoryForkStatus;
 import org.jboss.set.mjolnir.archive.domain.UserRemoval;
 import org.jboss.set.mjolnir.archive.domain.repositories.RemovalLogRepositoryBean;
+import org.jboss.set.mjolnir.archive.github.ExtendedUserService;
 import org.jboss.set.mjolnir.archive.github.GitHubMembershipBean;
 import org.jboss.set.mjolnir.archive.github.GitHubRepositoriesBean;
 
+import javax.annotation.PostConstruct;
 import javax.batch.api.AbstractBatchlet;
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -25,6 +29,7 @@ import javax.persistence.TypedQuery;
 import java.io.IOException;
 import java.sql.Timestamp;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -56,7 +61,17 @@ public class MembershipRemovalBatchlet extends AbstractBatchlet {
 
     @Inject
     private RemovalLogRepositoryBean logRepositoryBean;
-    
+
+    @Inject
+    private GitHubClient gitHubClient;
+
+    private ExtendedUserService userService;
+
+    @PostConstruct
+    void init() {
+        userService = new ExtendedUserService(gitHubClient);
+    }
+
     @Override
     public String process() {
         // obtain list of users we want to remove the access rights from
@@ -125,17 +140,38 @@ public class MembershipRemovalBatchlet extends AbstractBatchlet {
         return em.createNamedQuery(GitHubOrganization.FIND_ALL, GitHubOrganization.class).getResultList();
     }
 
-    String findGitHubUsername(String krbName) {
+    /**
+     * Retrieves registered user from DB by his LDAP name.
+     */
+    RegisteredUser findRegisteredUser(String krbName) {
         List<RegisteredUser> resultList = em.createNamedQuery(RegisteredUser.FIND_BY_KRB_NAME, RegisteredUser.class)
                 .setParameter("krbName", krbName)
-                .setMaxResults(1)
                 .getResultList();
         if (resultList.size() == 1) {
-            return resultList.get(0).getGithubName();
+            return resultList.get(0);
         } else if (resultList.size() > 1) {
             throw new IllegalStateException("Expected only single user with given kerberos name.");
         }
         return null;
+    }
+
+    /**
+     * Retrieves current GH username from GH API, based on user's GH ID.
+     */
+    String findUsersGitHubName(RegisteredUser registeredUser) {
+        Integer githubId = registeredUser.getGithubId();
+        Objects.requireNonNull(githubId, "The GitHub ID for user '%s' in unknown.");
+
+        try {
+            User githubUser = userService.getUserById(githubId);
+            logger.infof("Discovered GH username for user '%s', GH ID %d: %s", registeredUser.getKerberosName(),
+                    registeredUser.getGithubId(), githubUser.getLogin());
+            return githubUser.getLogin();
+        } catch (IOException e) {
+            throw new RuntimeException(
+                    String.format("Unable to obtain user information from GitHub for user id %d, username '%s'",
+                            githubId, registeredUser.getGithubName()), e);
+        }
     }
 
     /**
@@ -148,7 +184,10 @@ public class MembershipRemovalBatchlet extends AbstractBatchlet {
 
         // validate that either ldap username or github username is specified
         if (StringUtils.isBlank(removal.getGithubUsername()) && StringUtils.isBlank(removal.getLdapUsername())) {
-            logRepositoryBean.logMessage(removal, String.format("Ignoring removal #%d, neither GitHub username or LDAP username were specified.", removal.getId()));
+            logRepositoryBean.logError(removal, String.format("Ignoring removal #%d, neither GitHub username or LDAP username were specified.", removal.getId()));
+            return RemovalStatus.INVALID;
+        } else if (StringUtils.isNotBlank(removal.getGithubUsername()) && StringUtils.isNotBlank(removal.getLdapUsername())) {
+            logRepositoryBean.logError(removal, String.format("Ignoring removal #%d, only one of GitHub username and LDAP username can be specified.", removal.getId()));
             return RemovalStatus.INVALID;
         }
 
@@ -157,14 +196,17 @@ public class MembershipRemovalBatchlet extends AbstractBatchlet {
 
         if (StringUtils.isNotBlank(removal.getGithubUsername())) {
             gitHubUsername = removal.getGithubUsername();
-            logger.infof("Processing removal of GitHub user %s", gitHubUsername);
+            logger.infof("Processing removal of GitHub user '%s'", gitHubUsername);
         } else {
-            gitHubUsername = findGitHubUsername(removal.getLdapUsername());
-            if (gitHubUsername == null) {
+            RegisteredUser registeredUser = findRegisteredUser(removal.getLdapUsername());
+            if (registeredUser == null) {
                 logRepositoryBean.logMessage(removal, "Ignoring removal request for user " + removal.getLdapUsername());
                 return RemovalStatus.UNKNOWN_USER;
             }
-            logger.infof("Processing removal of LDAP user %s, GitHub username %s",
+
+            gitHubUsername = findUsersGitHubName(registeredUser);
+
+            logger.infof("Processing removal of LDAP user '%s', GitHub username '%s'",
                     removal.getLdapUsername(), gitHubUsername);
         }
 
@@ -184,7 +226,7 @@ public class MembershipRemovalBatchlet extends AbstractBatchlet {
 
             // if this is enabled in app configuration, unsubscribe user on github
             if (configuration.isUnsubscribeUsers()) {
-                logger.infof("Removing user %s from following teams: %s", gitHubUsername,
+                logger.infof("Removing user '%s' from following teams: %s", gitHubUsername,
                         organization.getTeams().stream().map(GitHubTeam::getName).collect(Collectors.joining(", ")));
 
                 // remove team memberships
@@ -192,7 +234,8 @@ public class MembershipRemovalBatchlet extends AbstractBatchlet {
                     try {
                         membershipBean.removeUserFromTeam(removal, team, gitHubUsername);
                     } catch (IOException e) {
-                        logRepositoryBean.logError(removal, "Couldn't remove user membership from GitHub teams: " + gitHubUsername, e);
+                        logRepositoryBean.logError(removal, String.format("Couldn't remove user '%s' membership from GitHub team '%s'",
+                                        gitHubUsername, team.getName()), e);
                         return RemovalStatus.FAILED;
                     }
                 }
@@ -202,12 +245,13 @@ public class MembershipRemovalBatchlet extends AbstractBatchlet {
                     try {
                         membershipBean.removeUserFromOrganization(removal, organization, gitHubUsername);
                     } catch (IOException e) {
-                        logRepositoryBean.logError(removal, "Couldn't remove user membership from GitHub organization: " + gitHubUsername, e);
+                        logRepositoryBean.logError(removal, String.format("Couldn't remove user '%s' membership from GitHub organization '%s'",
+                                gitHubUsername, organization), e);
                         return RemovalStatus.FAILED;
                     }
                 }
             } else {
-                logger.infof("Membership removal is disabled, membership has not been removed.", gitHubUsername);
+                logger.infof("Membership removal is disabled, memberships has not been removed.");
             }
         }
 
@@ -221,7 +265,7 @@ public class MembershipRemovalBatchlet extends AbstractBatchlet {
 
         Set<Repository> repositoriesToArchive;
         try {
-            logger.infof("Looking for repositories belonging to user %s that are forks of organization %s repositories.",
+            logger.infof("Looking for repositories belonging to user '%s' that are forks of organization '%s' repositories.",
                     gitHubUsername, organization.getName());
             repositoriesToArchive = discoveryBean.getRepositoriesToArchive(organization.getName(), gitHubUsername);
             logger.infof("Found following repositories to archive: %s",
@@ -245,7 +289,7 @@ public class MembershipRemovalBatchlet extends AbstractBatchlet {
             em.persist(repositoryFork);
 
             // archive
-            logger.infof("Archiving repository %s", repository.generateId());
+            logger.infof("Archiving repository '%s'", repository.generateId());
             try {
                 archivingBean.createRepositoryMirror(repository);
 

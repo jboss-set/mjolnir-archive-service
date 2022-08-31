@@ -26,13 +26,13 @@ public class GitHubMembershipBean {
 
     private final Logger logger = Logger.getLogger(getClass());
 
-    private final CustomizedTeamService teamService;
+    private final ExtendedTeamService teamService;
     private final OrganizationService organizationService;
     private final EntityManager em;
 
     @Inject
     public GitHubMembershipBean(GitHubClient client, EntityManager em) {
-        teamService = new CustomizedTeamService(client);
+        teamService = new ExtendedTeamService(client);
         organizationService = new OrganizationService(client);
         this.em = em;
     }

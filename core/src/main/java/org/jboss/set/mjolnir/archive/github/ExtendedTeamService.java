@@ -10,11 +10,11 @@ import java.io.IOException;
 import java.util.List;
 
 /**
- * TeamService extension implementing new API methods.
+ * TeamService extension that implements the new list-team-members API method.
  */
-public class CustomizedTeamService extends TeamService {
+public class ExtendedTeamService extends TeamService {
 
-    public CustomizedTeamService(GitHubClient client) {
+    public ExtendedTeamService(GitHubClient client) {
         super(client);
     }
 

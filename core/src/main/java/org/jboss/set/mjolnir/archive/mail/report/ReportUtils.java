@@ -12,4 +12,8 @@ public final class ReportUtils {
         return str == null ? "" : str;
     }
 
+    public static String optionalToString(Object o) {
+        return o == null ? "" : o.toString();
+    }
+
 }

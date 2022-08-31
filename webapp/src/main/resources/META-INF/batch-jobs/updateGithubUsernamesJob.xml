@@ -1,0 +1,5 @@
+<job id="updateGithubUsernamesJob">
+    <step id="step">
+        <batchlet ref="updateGithubUsernamesBatchlet"/>
+    </step>
+</job>
