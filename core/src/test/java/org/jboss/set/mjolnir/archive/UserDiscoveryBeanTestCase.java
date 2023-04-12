@@ -101,6 +101,17 @@ public class UserDiscoveryBeanTestCase {
                         .withHeader("Content-Type", "application/json")
                         .withBody(readSampleResponse("responses/gh-orgs-testorg-members-response.json"))));
 
+        stubFor(get(urlPathEqualTo("/api/v3/users/ben"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody(readSampleResponse("responses/gh-user.json"))));
+
+        stubFor(get(urlPathEqualTo("/api/v3/users/bob"))
+                .willReturn(aResponse()
+                        .withStatus(404)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody(readSampleResponse("responses/empty-object-response.json"))));
 
         // mock LdapDiscoveryBean behaviour
         Mockito.reset(ldapClientBeanMock);
@@ -336,7 +347,7 @@ public class UserDiscoveryBeanTestCase {
     @Test
     public void testWhitelistedUsersCaseInsensitive() {
         createRegisteredUser("bobNonExisting", "BOB", true);
-        createRegisteredUser("jimExisting", "JIM", "responsible guy", true);
+        createRegisteredUser("jimExisting", "JIM", "responsible guy", true, null);
         createRegisteredUser(null, "BEN", true);
         createRegisteredUser(null, "JOE", false);
 
@@ -410,16 +421,27 @@ public class UserDiscoveryBeanTestCase {
                 .containsOnly("ben", "bob");
     }
 
-    private void createRegisteredUser(String username, String githubName, boolean whitelisted) {
-        createRegisteredUser(username, githubName, null, whitelisted);
+    @Test
+    public void testFindInvalidGithubUsers() {
+        createRegisteredUser("bob", "bob", false);
+        createRegisteredUser("ben", "ben", null, false, 353221);
+
+        List<RegisteredUser> invalidGithubUsers = userDiscoveryBean.findInvalidGithubUsers();
+        assertThat(invalidGithubUsers.size()).isEqualTo(1);
+        assertThat(invalidGithubUsers.get(0).getGithubName()).isEqualTo("bob");
     }
 
-    private void createRegisteredUser(String username, String githubName, String responsiblePerson, boolean whitelisted) {
+    private void createRegisteredUser(String username, String githubName, boolean whitelisted) {
+        createRegisteredUser(username, githubName, null, whitelisted, null);
+    }
+
+    private void createRegisteredUser(String username, String githubName, String responsiblePerson, boolean whitelisted, Integer ghId) {
         RegisteredUser registeredUser = new RegisteredUser();
         registeredUser.setGithubName(githubName);
         registeredUser.setKerberosName(username);
         registeredUser.setResponsiblePerson(responsiblePerson);
         registeredUser.setWhitelisted(whitelisted);
+        registeredUser.setGithubId(ghId);
 
         em.getTransaction().begin();
         em.persist(registeredUser);

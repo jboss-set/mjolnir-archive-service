@@ -35,7 +35,7 @@ import java.util.stream.Collectors;
 
 /**
  * Discovers users that left the company and creates their removal records.
- *
+ * <p>
  * This implementation works by querying LDAP database. It should eventually be replaced by an implementation
  * relying on JMS messages.
  */
@@ -205,11 +205,17 @@ public class UserDiscoveryBean {
         List<RegisteredUser> invalidUsers = allRegisteredUsers.stream()
                 .filter(registeredUser -> StringUtils.isNotBlank(registeredUser.getGithubName()))
                 .filter(registeredUser -> {
-                    User user = findGithubUserByLogin(registeredUser.getGithubName());
-                    if (user == null || user.getId() != registeredUser.getGithubId()) {
-                        return true;
+                    String ghUsername = registeredUser.getGithubName();
+                    try {
+                        User user = userService.getUserIfExists(ghUsername);
+                        if (user == null || !Integer.valueOf(user.getId()).equals(registeredUser.getGithubId())) {
+                            return true;
+                        }
+                        return false;
+                    } catch (IOException e) {
+                        logger.errorf("Unable to verify existence of GH user '%s': %s", ghUsername, e.getMessage());
+                        return false; // Do not list the user as invalid.
                     }
-                    return false;
                 })
                 .collect(Collectors.toList());
         return invalidUsers;
@@ -406,12 +412,4 @@ public class UserDiscoveryBean {
         }
     }
 
-    private User findGithubUserByLogin(String login) {
-        try {
-            return userService.getUser(login);
-        } catch (IOException e) {
-            logger.warnf("GH user '%s' not found: %s", login, e.getMessage());
-            return null;
-        }
-    }
 }
