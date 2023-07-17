@@ -4,6 +4,7 @@ import org.jboss.set.mjolnir.archive.UserDiscoveryBean;
 import org.jboss.set.mjolnir.archive.domain.UserRemoval;
 
 import javax.inject.Inject;
+import javax.persistence.EntityManager;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -18,6 +19,9 @@ public class RetryUserRemoval extends HttpServlet {
 
     @Inject
     private UserDiscoveryBean userDiscoveryBean;
+
+    @Inject
+    private EntityManager em;
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
@@ -37,7 +41,9 @@ public class RetryUserRemoval extends HttpServlet {
             return;
         }
 
+        em.getTransaction().begin();
         UserRemoval userRemoval = userDiscoveryBean.getUserRemoval(id);
         userDiscoveryBean.createUserRemoval(userRemoval.getLdapUsername());
+        em.getTransaction().commit();
     }
 }

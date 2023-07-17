@@ -27,6 +27,7 @@ public class RemovalsReportTable implements ReportTable {
                 p("...performed during the last week").withStyle(Styles.SUB_HEADING_STYLE),
                 table().withStyle(Styles.TABLE_STYLE + Styles.TD_STYLE).with(
                         tr().with(
+                                th(Constants.ID).withStyle(Styles.TH_STYLE),
                                 th(Constants.LDAP_NAME).withStyle(Styles.TH_STYLE),
                                 th(Constants.GH_NAME).withStyle(Styles.TH_STYLE),
                                 th(Constants.CREATED).withStyle(Styles.TH_STYLE),
@@ -42,6 +43,7 @@ public class RemovalsReportTable implements ReportTable {
         SimpleDateFormat noMillisFormat = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
 
         return each(removals, removal -> tr(
+                td(String.valueOf(removal.getId())).withStyle(Styles.TD_STYLE),
                 td(ReportUtils.stringOrEmpty(removal.getLdapUsername())).withStyle(Styles.TD_STYLE),
                 td(ReportUtils.stringOrEmpty(removal.getGithubUsername())).withStyle(Styles.TD_STYLE),
                 td(noMillisFormat.format(removal.getCreated())).withStyle(Styles.TD_STYLE),
