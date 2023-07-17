@@ -14,6 +14,7 @@ import java.net.UnknownHostException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
 
 /**
@@ -35,14 +36,14 @@ public class GitHubRepositoriesBean {
      *
      * @param organisation github organization
      * @param githubUser   github username
-     * @return list of private repositories
+     * @return set of private repositories
      */
     public Set<Repository> getRepositoriesToArchive(String organisation, String githubUser) throws IOException {
         SocketTimeoutException timeoutException = null;
 
         for (int attempt = 0; attempt < 3; attempt++) {
             try {
-                List<Repository> orgRepositories = repositoryService.getOrgRepositories(organisation);
+                List<Repository> orgRepositories = getOrgsRepositoriesWithRetry(organisation);
 
                 List<Repository> privateRepositories = orgRepositories.stream()
                         .filter(Repository::isPrivate)
@@ -50,9 +51,9 @@ public class GitHubRepositoriesBean {
 
                 Set<Repository> userRepositories = new HashSet<>();
                 for (Repository sourceRepository : privateRepositories) {
-                    List<Repository> forks = repositoryService.getForks(sourceRepository);
+                    List<Repository> forks = getForksWithRetry(sourceRepository);
                     forks.stream()
-                            .filter(fork -> githubUser.toLowerCase().equals(fork.getOwner().getLogin().toLowerCase()))
+                            .filter(fork -> githubUser.equalsIgnoreCase(fork.getOwner().getLogin()))
                             .peek(repository -> repository.setSource(sourceRepository)) // set organization's repository as the source repository
                             .forEach(userRepositories::add);
                 }
@@ -73,4 +74,30 @@ public class GitHubRepositoriesBean {
         throw timeoutException;
     }
 
+    private List<Repository> getOrgsRepositoriesWithRetry(String org) throws IOException {
+        return withRetry(() -> {
+            return repositoryService.getOrgRepositories(org);
+        });
+    }
+
+    private List<Repository> getForksWithRetry(Repository sourceRepository) throws IOException {
+        return withRetry(() -> {
+            return repositoryService.getForks(sourceRepository);
+        });
+    }
+
+    private <R> R withRetry(Callable<R> callable) throws IOException {
+        IOException ex = null;
+        for (int i = 1; i <= 3; i++) {
+            try {
+                return callable.call();
+            } catch (IOException e) {
+                LOG.warnf(e, "Failure on retry #%d", i);
+                ex = e;
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+        throw ex;
+    }
 }
