@@ -390,9 +390,13 @@ public class UserDiscoveryBean {
         em.getTransaction().commit();
     }
 
-    public void createUserRemoval(String krbName) {
+    public void createUserRemoval(String ldapUsername) {
         Set<String> existingUserNamesToProcess = getExistingUserNamesToProcess();
-        createUniqueUserRemoval(existingUserNamesToProcess, krbName);
+        createUniqueUserRemoval(existingUserNamesToProcess, ldapUsername);
+    }
+
+    public UserRemoval getUserRemoval(Long id) {
+        return em.find(UserRemoval.class, id);
     }
 
     private Set<String> getExistingUserNamesToProcess() {

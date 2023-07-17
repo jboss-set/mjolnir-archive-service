@@ -19,6 +19,10 @@
     <dd>Generates empty test email.</dd>
     <dt>/update-github-usernames</dt>
     <dd>Updates GH usernames of registered usres according to their GH IDs.</dd>
+    <dt>/retry-user-removal?id=[existingRemovalId]</dt>
+    <dd>Adds a new user removal by copying an existing user removal with given ID. This is useful when we want to retry
+        a failed removal. Call /archive-users to trigger the process immediately, otherwise it will just be scheduled
+        for the next planned run.</dd>
 </dl>
 
 </body>
