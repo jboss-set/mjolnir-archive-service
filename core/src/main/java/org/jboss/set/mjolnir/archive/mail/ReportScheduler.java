@@ -27,7 +27,7 @@ import java.util.List;
 @TransactionManagement(TransactionManagementType.BEAN) // do not open managed transaction
 public class ReportScheduler {
 
-    private Logger logger = Logger.getLogger(getClass());
+    private final Logger logger = Logger.getLogger(getClass());
 
     private static final String SUBJECT = "User removals report ";
 
@@ -61,7 +61,7 @@ public class ReportScheduler {
     @Schedule(dayOfWeek="Sun", hour="7", persistent = false)
     public void sendMail() throws IOException, NamingException {
         String fromAddress = configuration.getReportingEmail();
-        String toAddress = configuration.getReportingEmail();
+        String toAddress = configuration.getSenderEmail();
 
         SimpleDateFormat noMillisFormat = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
         String subject = SUBJECT + noMillisFormat.format(new Timestamp(System.currentTimeMillis()));

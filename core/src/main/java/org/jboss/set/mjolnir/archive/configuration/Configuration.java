@@ -12,6 +12,7 @@ public class Configuration {
     private String gitHubApiScheme;
     private String repositoryArchiveRoot;
     private String reportingEmail;
+    private String senderEmail;
     private String ldapUrl;
     private String ldapSearchContext;
     private boolean unsubscribeUsers = false;
@@ -52,6 +53,13 @@ public class Configuration {
      */
     public String getReportingEmail() {
         return reportingEmail;
+    }
+
+    /**
+     * Email address to use as a sender address.
+     */
+    public String getSenderEmail() {
+        return senderEmail;
     }
 
     public String getLdapUrl() {
@@ -113,6 +121,11 @@ public class Configuration {
 
         public ConfigurationBuilder setReportingEmail(String reportingEmail) {
             this.configuration.reportingEmail = reportingEmail;
+            return this;
+        }
+
+        public ConfigurationBuilder setSenderEmail(String senderEmail) {
+            this.configuration.senderEmail = senderEmail;
             return this;
         }
 

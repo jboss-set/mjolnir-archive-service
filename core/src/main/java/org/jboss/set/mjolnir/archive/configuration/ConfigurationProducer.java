@@ -23,6 +23,7 @@ public class ConfigurationProducer {
     private final static String UNSUBSCRIBE_USERS = "application.unsubscribe_users";
     private final static String REMOVE_USERS_WITHOUT_LDAP_ACCOUNT = "application.remove_users_without_ldap_account";
     private final static String REPORTING_EMAIL = "application.reporting_email";
+    private final static String SENDER_EMAIL = "application.sender_email";
     private final static String LDAP_URL = "ldap.url";
     private final static String LDAP_SEARCH_CONTEXT = "ldap.search_context";
     private final static String REMOVE_ARCHIVES = "application.remove_archives";
@@ -58,6 +59,9 @@ public class ConfigurationProducer {
                         break;
                     case REPORTING_EMAIL:
                         configurationBuilder.setReportingEmail(value);
+                        break;
+                    case SENDER_EMAIL:
+                        configurationBuilder.setSenderEmail(value);
                         break;
                     case LDAP_URL:
                         configurationBuilder.setLdapUrl(value);
