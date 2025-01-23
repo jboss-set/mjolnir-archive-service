@@ -31,6 +31,9 @@ public class GitHubTeam {
     @Column(name = "github_id", unique = true)
     private Integer githubId;
 
+    @Column(name = "selfservice")
+    private Boolean selfService;
+
     public GitHubTeam() {
     }
 
@@ -60,5 +63,9 @@ public class GitHubTeam {
 
     public void setGithubId(Integer githubId) {
         this.githubId = githubId;
+    }
+
+    public Boolean isSelfService() {
+        return selfService;
     }
 }

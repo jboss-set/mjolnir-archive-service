@@ -43,6 +43,7 @@ create table github_teams (
     org_id bigint not null,
     name varchar(255),
     github_id bigint unique,
+    selfservice boolean, -- Can users subscribe to this team by themselves? If not, mjolnir will just be removing membership in this team.
     constraint fk_github_teams_org_id foreign key (org_id) references github_orgs (id)
 );
 

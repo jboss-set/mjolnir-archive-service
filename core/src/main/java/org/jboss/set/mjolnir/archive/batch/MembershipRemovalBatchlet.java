@@ -246,7 +246,7 @@ public class MembershipRemovalBatchlet extends AbstractBatchlet {
                         membershipBean.removeUserFromOrganization(removal, organization, gitHubUsername);
                     } catch (IOException e) {
                         logRepositoryBean.logError(removal, String.format("Couldn't remove user '%s' membership from GitHub organization '%s'",
-                                gitHubUsername, organization), e);
+                                gitHubUsername, organization.getName()), e);
                         return RemovalStatus.FAILED;
                     }
                 }
