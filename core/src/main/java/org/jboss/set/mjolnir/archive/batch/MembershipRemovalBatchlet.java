@@ -29,7 +29,6 @@ import javax.persistence.TypedQuery;
 import java.io.IOException;
 import java.sql.Timestamp;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -160,7 +159,18 @@ public class MembershipRemovalBatchlet extends AbstractBatchlet {
      */
     String findUsersGitHubName(RegisteredUser registeredUser) {
         Integer githubId = registeredUser.getGithubId();
-        Objects.requireNonNull(githubId, "The GitHub ID for user '%s' in unknown.");
+
+        if (githubId == null) {
+            if (registeredUser.getGithubName() == null) {
+                logger.warnf("The GitHub username and ID for user '%s' is unknown, user cannot be processed.",
+                        registeredUser.getKerberosName());
+            } else {
+                logger.errorf("The GitHub ID for the user '%s' is unknown, even though the GitHub username is set ('%s'). This looks like data inconsistency.",
+                        registeredUser.getKerberosName(), registeredUser.getGithubName());
+                throw new RuntimeException(String.format("The GitHub ID for the user '%s' is unknown.",
+                        registeredUser.getKerberosName()));
+            }
+        }
 
         try {
             User githubUser = userService.getUserById(githubId);
