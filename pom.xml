@@ -27,7 +27,7 @@
 
         <version.egit>6.0.0.202111291000-r</version.egit>
         <version.jgit>6.10.1.202505221210-r</version.jgit>
-        <version.jberet>1.0.2.Final</version.jberet>
+        <version.jberet>2.2.1.Final</version.jberet>
         <version.deltaspike>1.9.6</version.deltaspike>
         <version.j2html>1.4.0</version.j2html>
         <version.json>20231013</version.json>
