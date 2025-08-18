@@ -30,7 +30,7 @@
         <version.jberet>1.0.2.Final</version.jberet>
         <version.deltaspike>1.9.6</version.deltaspike>
         <version.j2html>1.4.0</version.j2html>
-        <version.json>20230227</version.json>
+        <version.json>20231013</version.json>
     </properties>
 
     <dependencyManagement>
