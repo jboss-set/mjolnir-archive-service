@@ -245,7 +245,7 @@ public class MembershipRemovalBatchletTest {
         WireMock.verify(getRequestedFor(urlEqualTo("/api/v3/teams/1/members/TomasHofman")));
         WireMock.verify(getRequestedFor(urlEqualTo("/api/v3/teams/2/members/TomasHofman")));
         WireMock.verify(getRequestedFor(urlEqualTo("/api/v3/teams/3/members/TomasHofman")));
-        WireMock.verify(deleteRequestedFor(urlEqualTo("/api/v3/teams/1/members/TomasHofman")));
+        WireMock.verify(deleteRequestedFor(urlEqualTo("/api/v3/orgs/testorg/teams/team-1/memberships/TomasHofman")));
         WireMock.verify(0, deleteRequestedFor(urlEqualTo("/api/v3/teams/2/members/TomasHofman")));
         WireMock.verify(0, deleteRequestedFor(urlEqualTo("/api/v3/teams/3/members/TomasHofman")));
 

@@ -1,8 +1,8 @@
 insert into github_orgs values (1, 'testorg', true, true);
 
-insert into github_teams values (1, 1, 'Team 1', 1, false);
-insert into github_teams values (2, 1, 'Team 2', 2, false);
-insert into github_teams values (3, 1, 'Team 3', 3, false);
+insert into github_teams values (1, 1, 'Team 1', 'team-1', 1, false);
+insert into github_teams values (2, 1, 'Team 2', 'team-2', 2, false);
+insert into github_teams values (3, 1, 'Team 3', 'team-3', 3, false);
 
 insert into application_parameters (param_name, param_value) values ('github.token', '');
 insert into application_parameters (param_name, param_value) values ('application.sender_email', 'from@example.com');

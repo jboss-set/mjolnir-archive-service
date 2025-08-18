@@ -57,11 +57,11 @@ public class GitHubMembershipBeanTestCase {
                 .willReturn(aResponse()
                         .withStatus(204)));
 
-        stubFor(delete(urlPathEqualTo("/api/v3/teams/1/members/lvydra"))
+        stubFor(delete(urlPathEqualTo("/api/v3/orgs/testorg/teams/team-1/memberships/lvydra"))
                 .willReturn(aResponse()
                         .withStatus(204)));
 
-        stubFor(delete(urlPathEqualTo("/api/v3/teams/3/members/lvydra"))
+        stubFor(delete(urlPathEqualTo("/api/v3/orgs/testorg/teams/team-2/memberships/lvydra"))
                 .willReturn(aResponse()
                         .withStatus(204)));
 
@@ -119,7 +119,7 @@ public class GitHubMembershipBeanTestCase {
         
         bean.removeUserFromTeam(new UserRemoval(), org.getTeams().get(0), "lvydra");
 
-        verify(deleteRequestedFor(urlEqualTo("/api/v3/teams/1/members/lvydra")));
+        verify(deleteRequestedFor(urlEqualTo("/api/v3/orgs/testorg/teams/team-1/memberships/lvydra")));
     }
 
     @Test
@@ -158,16 +158,19 @@ public class GitHubMembershipBeanTestCase {
         GitHubTeam team1 = new GitHubTeam();
         team1.setGithubId(1);
         team1.setName("Team 1");
+        team1.setSlug("team-1");
         team1.setOrganization(org);
 
         GitHubTeam team2 = new GitHubTeam();
         team2.setGithubId(2);
         team2.setName("Team 2");
+        team2.setSlug("team-2");
         team2.setOrganization(org);
 
         GitHubTeam team3 = new GitHubTeam();
         team3.setGithubId(3);
         team3.setName("Team 3");
+        team3.setSlug("team-3");
         team3.setOrganization(org);
 
         org.setTeams(Arrays.asList(team1, team2, team3));

@@ -48,7 +48,7 @@ public class GitHubMembershipBean {
         if (isMember(gitHubUsername, gitHubTeam)) {
             logger.infof("Removing membership of user %s in team %s", gitHubUsername, gitHubTeam.getName());
             try {
-                teamService.removeMember(gitHubTeam.getGithubId(), gitHubUsername);
+                teamService.removeMembership(gitHubTeam.getOrganization().getName(), gitHubTeam.getSlug(), gitHubUsername);
                 logUnsubscribedTeam(removal, gitHubUsername, gitHubTeam, UnsubscribeStatus.COMPLETED);
             } catch (IOException e) {
                 logUnsubscribedTeam(removal, gitHubUsername, gitHubTeam, UnsubscribeStatus.FAILED);
@@ -86,7 +86,7 @@ public class GitHubMembershipBean {
         HashMap<GitHubTeam, List<User>> map = new HashMap<>();
         for (GitHubTeam team : organization.getTeams()) {
             List<User> members = teamService.getMembers(organization.getName(), team.getGithubId());
-            if (members.size() > 0) {
+            if (!members.isEmpty()) {
                 map.put(team, members);
             }
         }
