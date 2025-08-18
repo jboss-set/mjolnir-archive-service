@@ -70,7 +70,7 @@ public final class TestUtils {
                         .withStatus(204)));
 
         // delete membership of a user from team #1
-        stubFor(delete(urlPathEqualTo("/api/v3/teams/1/members/TomasHofman"))
+        stubFor(delete(urlPathEqualTo("/api/v3/orgs/testorg/teams/team-1/memberships/TomasHofman"))
                 .willReturn(aResponse()
                         .withStatus(204)));
 

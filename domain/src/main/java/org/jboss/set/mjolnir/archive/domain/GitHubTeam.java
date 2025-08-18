@@ -26,7 +26,11 @@ public class GitHubTeam {
     @JoinColumn(name="org_id")
     private GitHubOrganization organization;
 
+    @Column
     private String name;
+
+    @Column
+    private String slug;
 
     @Column(name = "github_id", unique = true)
     private Integer githubId;
@@ -67,5 +71,13 @@ public class GitHubTeam {
 
     public Boolean isSelfService() {
         return selfService;
+    }
+
+    public String getSlug() {
+        return slug;
+    }
+
+    public void setSlug(String slug) {
+        this.slug = slug;
     }
 }
